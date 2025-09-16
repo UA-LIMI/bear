@@ -7,13 +7,14 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { config } = require('./config');
+const { getConfig } = require('./config');
 const { getRateLimiter } = require('./middleware/rateLimiter');
 const { errorLogger, requestLogger, logger } = require('./middleware/logger');
 const { sanitizeInput } = require('./middleware/validation');
 
 // Create Express app
 const app = express();
+const config = getConfig();
 
 // Security middleware - must be first
 app.use(helmet({
@@ -126,6 +127,10 @@ app.use('/test', testRoutes);
 // OpenAI API routes
 const openaiRoutes = require('./routes/openai');
 app.use('/api', openaiRoutes);
+
+// Vercel AI Gateway Proxy route
+const aiProxyRoutes = require('./routes/aiProxy');
+app.use('/api/ai-proxy', aiProxyRoutes);
 
 // 404 handler - catch all unmatched routes
 app.use((req, res) => {

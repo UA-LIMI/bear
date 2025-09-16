@@ -1,112 +1,78 @@
-LIMI AI APPLICATION - PRODUCT REQUIREMENTS DOCUMENT
-=====================================================
+# Product Requirements Document (PRD): Limi AI - Real-time Voice Assistant
 
-PROJECT OVERVIEW
-----------------
-Limi AI is a voice-enabled web application that provides real-time AI voice interactions through a secure Backend-for-Frontend (BFF) architecture. The application connects users to OpenAI's real-time voice services while maintaining strict security boundaries between frontend and backend components.
+## 1. Overview
 
-ARCHITECTURAL REQUIREMENTS
---------------------------
-The application MUST implement a Backend-for-Frontend (BFF) architecture with:
-- Backend: Standalone Node.js service acting as the secure "brain" for all AI operations
-- Frontend: Next.js client application serving as the "face" that communicates exclusively with the backend
-- Security: All API keys and sensitive credentials must be stored and managed exclusively in the backend
-- Communication: Frontend must never directly access AI services; all requests must be proxied through the backend
+Limi AI is a modern, real-time voice AI application featuring a sophisticated frontend built with Next.js and a secure, production-ready Node.js/Express backend. The core of the application is its ability to establish a direct, real-time voice connection with OpenAI's advanced AI models. The backend serves as a secure gateway, managing API keys and providing short-lived, ephemeral tokens to the frontend, which then communicates directly with the OpenAI Realtime API. This architecture ensures both high performance and robust security, preventing any exposure of sensitive API keys to the client-side.
 
-TECHNOLOGY STACK
-----------------
-Required technologies for implementation:
-- Backend Service: Node.js with Express framework
-- Real-Time Voice: OpenAI Agents SDK utilizing WebRTC for low-latency audio streaming
-- Text & AI Management: Vercel AI Gateway for text-based AI and request management
-- Frontend: Next.js 14 application with shadcn/ui components
-- Transport: WebRTC for browser-to-OpenAI voice connections
+The project is managed using the `task-master-ai` CLI, a powerful tool for orchestrating the development workflow, from task generation and dependency management to progress tracking.
 
-FUNCTIONAL REQUIREMENTS
------------------------
+## 2. Core Features
 
-PHASE 1: BACKEND AI SERVICE IMPLEMENTATION
+### 2.1. Frontend: Real-time Voice Interface
+- **Next.js & TypeScript:** A modern, type-safe, and performant frontend application.
+- **`VoiceConnection.tsx` Component:** A sophisticated, animated UI component for managing the voice connection lifecycle.
+- **Connection States:** The UI will visually represent all connection states: `disconnected`, `connecting`, `connected`, `listening`, `processing`, `speaking`, and `failed`.
+- **Configuration Panel:** Users can configure the AI model, voice style, and provide custom instructions to the AI.
+- **Real-time Audio Visualization:** The UI will feature real-time audio visualizations to provide feedback to the user.
+- **Error Handling:** Clear, user-friendly error messages will be displayed on the UI.
 
-1. Vercel AI Gateway Proxy Implementation
-   - Create a secure Express API endpoint for proxying text-based AI requests
-   - Handle authentication and authorization with Vercel AI Gateway
-   - Manage API key storage and rotation securely
-   - Implement request/response logging and monitoring
-   - Support multiple AI models through the unified gateway interface
-   - Handle error responses and implement retry logic
+### 2.2. Backend: Secure AI Gateway
+- **Node.js & Express:** A robust, production-ready backend built with a standard, well-supported technology stack.
+- **Ephemeral Token Generation:** The backend's primary responsibility is to generate secure, short-lived tokens for the frontend to use when connecting to OpenAI.
+- **API Key Management:** All sensitive API keys are stored securely on the backend and never exposed to the client.
+- **Production-Ready Architecture:**
+    - **Cloud-Native Health Checks:** Includes `/healthz`, `/readyz`, `/live`, and `/status` endpoints for comprehensive monitoring.
+    - **Robust Security:** Implements Helmet for security headers, CORS, rate limiting, and comprehensive input validation.
+    - **Structured Logging:** Uses Winston for structured, centralized logging with request tracing.
+    - **Centralized Configuration:** All configuration is managed via a central module with support for environment variables.
 
-2. OpenAI Client Secret Generation Endpoint
-   - Implement secure API endpoint for generating ephemeral client secrets
-   - Communicate with OpenAI's /v1/realtime/client_secrets endpoint
-   - Generate short-lived tokens with appropriate session configuration
-   - Implement token expiration and refresh mechanisms
-   - Secure the endpoint with appropriate authentication
-   - Log token generation for audit purposes
+## 3. Technical Architecture
 
-3. Backend Infrastructure Setup
-   - Configure Express server with proper middleware
-   - Implement CORS policies for frontend communication
-   - Set up environment variable management for API keys
-   - Create health check and monitoring endpoints
-   - Implement rate limiting and request throttling
-   - Set up proper error handling and logging
+### 3.1. Frontend
+- **Framework:** Next.js 15+ with TypeScript
+- **UI:** Shadcn UI components, Framer Motion for animations, Tailwind CSS
+- **Real-time Communication:** `@openai/agents-realtime` for direct communication with OpenAI.
 
-PHASE 2: FRONTEND VOICE CLIENT IMPLEMENTATION
+### 3.2. Backend
+- **Framework:** Node.js 18+ with Express
+- **Key Dependencies:** `dotenv`, `cors`, `helmet`, `express-rate-limit`, `express-validator`, `winston`.
+- **Security:** Implements a standard middleware chain for security, logging, and validation.
 
-4. Voice Connection User Interface
-   - Design minimal, intuitive UI using shadcn/ui components
-   - Create connection status indicator (disconnected/connecting/connected)
-   - Implement connect/disconnect controls
-   - Add visual feedback for active voice sessions
-   - Display connection quality indicators
-   - Implement error state displays
+### 3.3. Workflow
+1.  The frontend requests an ephemeral token from the backend's `/api/client-secret` endpoint.
+2.  The backend validates the request and generates a short-lived token using its secure OpenAI API key.
+3.  The frontend receives the ephemeral token.
+4.  The frontend uses the ephemeral token to establish a direct, real-time connection to the OpenAI API.
+5.  All subsequent voice communication happens directly between the frontend and OpenAI, ensuring low latency.
 
-5. WebRTC Voice Connection Logic
-   - Implement client-secret retrieval from backend
-   - Initialize OpenAI Agents SDK with ephemeral token
-   - Establish WebRTC connection to OpenAI real-time services
-   - Handle microphone permissions and audio setup
-   - Implement connection state management
-   - Handle reconnection logic for dropped connections
-   - Implement proper cleanup on disconnect
+## 4. Development Roadmap (Generated Tasks)
 
-6. Frontend-Backend Integration
-   - Create API client for backend communication
-   - Implement proper error handling for API calls
-   - Set up state management for connection status
-   - Handle authentication flow if required
-   - Implement loading states during connection setup
+### Phase 1: Foundational Setup & Backend Solidification
+- **Task 1:** Finalize Backend Infrastructure (complete pending tasks from `REVIEW.md`).
+    - **Subtask 1.1:** Implement Centralized Error Handling.
+    - **Subtask 1.2:** Enhance Logging with file logging and rotation.
+    - **Subtask 1.3:** Create Comprehensive API Documentation.
+- **Task 2:** Frontend & Backend Integration.
+    - **Subtask 2.1:** Ensure the frontend can successfully connect to the running backend and retrieve an ephemeral token.
+    - **Subtask 2.2:** Test the full, end-to-end connection flow to OpenAI.
+- **Task 3:** Vercel Deployment & CI/CD.
+    - **Subtask 3.1:** Resolve any remaining Vercel deployment issues.
+    - **Subtask 3.2:** Configure Vercel environment variables for the backend.
 
-NON-FUNCTIONAL REQUIREMENTS
----------------------------
-- Security: All API keys must be stored securely in backend environment variables
-- Performance: Voice latency must be under 500ms for optimal user experience
-- Reliability: Implement automatic reconnection for dropped connections
-- Scalability: Backend should support multiple concurrent voice sessions
-- Monitoring: Implement comprehensive logging for debugging and monitoring
-- User Experience: Connection process should be seamless with clear status indicators
+### Phase 2: Feature Enhancement & Production Hardening
+- **Task 4:** Frontend UI/UX Polish.
+    - **Subtask 4.1:** Refine UI animations and state transitions.
+    - **Subtask 4.2:** Conduct user experience testing and gather feedback.
+- **Task 5:** Advanced Backend Features.
+    - **Subtask 5.1:** Implement Application Performance Monitoring (APM).
+    - **Subtask 5.2:** Conduct a formal security audit.
+    - **Subtask 5.3:** Conduct performance and load testing.
 
-SUCCESS CRITERIA
-----------------
-- Successfully establish secure voice connection from browser to OpenAI
-- Backend properly proxies all AI requests without exposing API keys
-- Frontend displays real-time connection status
-- Voice interaction works with low latency
-- System handles connection failures gracefully
-- All security requirements are met
+## 5. Risks and Mitigations
 
-TECHNICAL CONSTRAINTS
----------------------
-- Must use specified technology stack (no substitutions)
-- Frontend must not have direct access to any API keys
-- All AI service communication must go through the backend
-- WebRTC must be used for voice streaming
-- Must support modern browsers (Chrome, Firefox, Safari, Edge)
-
-DELIVERABLES
-------------
-1. Standalone Node.js/Express backend service
-2. Updated Next.js frontend with voice UI
-3. Secure API endpoints for AI gateway and client secrets
-4. Working voice connection using OpenAI Agents SDK
-5. Documentation for API endpoints and setup instructions
+- **Risk:** Latency in real-time communication.
+  - **Mitigation:** The current architecture, with a direct frontend-to-OpenAI connection, is designed to minimize this risk. Performance testing will be critical.
+- **Risk:** Security vulnerabilities.
+  - **Mitigation:** The backend is built with a security-first approach. A formal security audit will be conducted to further mitigate this risk.
+- **Risk:** Scalability.
+  - **Mitigation:** The backend's cloud-native design and the direct communication pattern will support scalability. Load testing will be used to identify and address any bottlenecks.

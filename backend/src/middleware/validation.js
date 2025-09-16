@@ -5,6 +5,7 @@
 
 const { body, param, query, validationResult } = require('express-validator');
 const { logger } = require('./logger');
+const { supportedModels, isModelSupported } = require('../config/models');
 
 /**
  * Handle validation errors
@@ -132,9 +133,13 @@ const validationRules = {
   // AI-related validation
   aiRequest: {
     model: body('model')
-      .optional()
-      .isIn(['gpt-4o-realtime-preview', 'gpt-realtime', 'gpt-4-realtime'])
-      .withMessage('Model must be a supported realtime model (gpt-4o-realtime-preview, gpt-realtime, gpt-4-realtime)'),
+      .notEmpty().withMessage('Model is a required field.')
+      .custom((value) => {
+        if (!isModelSupported(value)) {
+          throw new Error(`Model must be one of the supported models: ${Object.keys(supportedModels).join(', ')}`);
+        }
+        return true;
+      }),
 
     temperature: body('temperature')
       .optional()
@@ -169,7 +174,7 @@ const validationChains = {
   healthCheck: [],
 
   // AI Gateway proxy validation
-  aiGatewayRequest: [
+  aiRequestValidation: [
     validationRules.aiRequest.messages,
     validationRules.aiRequest['messages.*.role'],
     validationRules.aiRequest['messages.*.content'],

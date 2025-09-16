@@ -5,20 +5,10 @@
 
 const { getConfig, logConfig, validateEnv } = require('./env');
 
-// Get the configuration object
-const config = getConfig();
-
-// Export everything
+// Export utility functions and the getConfig function itself.
+// Modules that need the configuration will call getConfig() on their own.
 module.exports = {
-  // The main config object
-  config,
-  
-  // Utility functions
+  getConfig,
   logConfig,
   validateEnv,
-  
-  // Direct access to commonly used values
-  port: config.port,
-  isDevelopment: config.isDevelopment,
-  isProduction: config.isProduction,
 };

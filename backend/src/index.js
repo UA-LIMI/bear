@@ -4,8 +4,11 @@
  */
 
 const app = require('./app');
-const { config, logConfig } = require('./config');
+const { getConfig, logConfig } = require('./config');
 const { logger } = require('./middleware/logger');
+
+// Get configuration
+const config = getConfig();
 
 // Log configuration on startup
 logConfig();

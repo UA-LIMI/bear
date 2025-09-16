@@ -14,6 +14,21 @@ router.get('/healthz', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// API Key health check
+router.get('/healthz/keys', (req, res) => {
+  const keysStatus = {
+    openaiApiKey: process.env.OPENAI_API_KEY ? 'present' : 'missing',
+    aiGatewayApiKey: process.env.AI_GATEWAY_API_KEY ? 'present' : 'missing',
+  };
+
+  const allKeysPresent = Object.values(keysStatus).every(status => status === 'present');
+
+  res.status(allKeysPresent ? 200 : 503).json({
+    status: allKeysPresent ? 'ok' : 'error',
+    keys: keysStatus,
+  });
+});
+
 // Readiness check - service is ready to accept traffic (cloud-native standard)
 router.get('/readyz', async (req, res) => {
   let allChecksPass = true;

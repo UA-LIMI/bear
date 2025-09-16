@@ -4,7 +4,9 @@
  */
 
 const rateLimit = require('express-rate-limit');
-const { config } = require('../config');
+const { getConfig } = require('../config');
+
+const config = getConfig();
 
 /**
  * General API rate limiter - generous for early users

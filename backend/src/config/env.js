@@ -48,7 +48,7 @@ function validateEnv() {
     missingVars.forEach(varName => {
       console.error(`   - ${varName}`);
     });
-    console.error('\n📝 Please create a .env file in the backend directory with these variables.');
+    console.error('\n📝 Please create a .env file in the project root directory with these variables.');
     console.error('   You can use .env.example as a template.\n');
     process.exit(1);
   }

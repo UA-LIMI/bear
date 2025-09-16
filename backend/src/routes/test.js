@@ -12,7 +12,7 @@ const router = express.Router();
  * Test endpoint for AI request validation
  * POST /test/ai-request
  */
-router.post('/ai-request', validationChains.aiGatewayRequest, (req, res) => {
+router.post('/ai-request', validationChains.aiRequestValidation, (req, res) => {
   res.json({
     message: 'AI request validation passed',
     data: {

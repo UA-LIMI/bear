@@ -14,8 +14,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Mic, MicOff, Loader2, AlertCircle, Volume2, Zap, Brain, Waves, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Mic, MicOff, Loader2, AlertCircle, Volume2, Zap, Brain, Waves, Settings, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { RealtimeSession } from '@openai/agents-realtime';
 
 interface VoiceConnectionState {
   status: 'disconnected' | 'connecting' | 'connected' | 'listening' | 'processing' | 'speaking' | 'failed';
@@ -31,15 +32,14 @@ export function VoiceConnection() {
   });
   const [isConnecting, setIsConnecting] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [showWaveform, setShowWaveform] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<RealtimeSession | null>(null);
   const [config, setConfig] = useState({
     model: 'gpt-4o-realtime-preview',
     voice: 'alloy',
     instructions: 'You are a helpful voice assistant for Limi AI. Be friendly and conversational.'
   });
   const [showConfig, setShowConfig] = useState(false);
-  const audioVisualizationRef = useRef<number>();
+  const audioVisualizationRef = useRef<number | null>(null);
 
   // Available options based on OpenAI API research
   const modelOptions = [
@@ -158,7 +158,7 @@ export function VoiceConnection() {
   const disconnect = async () => {
     try {
       if (session) {
-        await session.disconnect();
+        await session.close();
         setSession(null);
         console.log('🔌 Voice assistant disconnected');
       }

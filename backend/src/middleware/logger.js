@@ -4,7 +4,11 @@
  */
 
 const winston = require('winston');
-const { config } = require('../config');
+const { getConfig } = require('../config');
+const { sanitizeObject } = require('../utils/sanitizer');
+
+// Get configuration
+const config = getConfig();
 
 // Create Winston logger
 const logger = winston.createLogger({
@@ -50,6 +54,7 @@ function requestLogger(req, res, next) {
     url: req.url,
     userAgent: req.get('User-Agent'),
     ip: req.ip,
+    body: sanitizeObject(req.body), // Sanitize request body
     timestamp: new Date().toISOString(),
   });
   

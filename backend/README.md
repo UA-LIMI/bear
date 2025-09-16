@@ -254,6 +254,40 @@ backend/
 | `SESSION_SECRET` | Auto-generated | Session encryption key |
 | `JWT_SECRET` | Auto-generated | JWT signing key |
 
+### API Key Management and Rotation
+
+The backend service loads API keys from the `.env` file in the project root. To rotate keys, simply update the values in this file.
+
+- **Development**: The server will automatically restart and use the new keys, thanks to `nodemon`.
+- **Production**: You must restart the server process for the new keys to take effect.
+
+A health check endpoint is available to verify that the keys are loaded correctly:
+
+#### `GET /healthz/keys`
+Verifies that the required API keys are present in the environment.
+
+**Response (Success):**
+```json
+{
+  "status": "ok",
+  "keys": {
+    "openaiApiKey": "present",
+    "aiGatewayApiKey": "present"
+  }
+}
+```
+
+**Response (Failure):**
+```json
+{
+  "status": "error",
+  "keys": {
+    "openaiApiKey": "missing",
+    "aiGatewayApiKey": "present"
+  }
+}
+```
+
 ## 🧪 Testing
 
 ### Manual Testing

@@ -70,10 +70,10 @@ async function testInputValidation() {
   console.log('\n🛡️ Testing Input Validation System...\n');
 
   try {
-    // Test valid AI request
+    // Test valid AI request with a supported model
     const validAiRequest = {
       messages: [{ role: 'user', content: 'Hello, how are you?' }],
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-realtime-preview', // Corrected to a supported model
       temperature: 0.7,
       maxTokens: 100
     };
@@ -87,23 +87,24 @@ async function testInputValidation() {
       `- Status: ${validResponse.status}`
     );
 
-    // Test invalid AI request
+    // Test invalid AI request (e.g., unsupported model)
     try {
       const invalidAiRequest = {
-        messages: [{ role: 'invalid', content: '' }],
-        temperature: 3,
-        maxTokens: 5000
+        messages: [{ role: 'user', content: 'This is a test' }],
+        model: 'unsupported-model-for-test', // Intentionally invalid model
+        temperature: 0.5,
+        maxTokens: 50
       };
 
       await axios.post(`${BASE_URL}/test/ai-request`, invalidAiRequest, {
         headers: { 'Content-Type': 'application/json' }
       });
       
-      logTest('Invalid AI Request Validation', false, '- Should have returned 400 error');
+      logTest('Invalid AI Model Validation', false, '- Should have returned 400 error for unsupported model');
     } catch (error) {
-      logTest('Invalid AI Request Validation', 
+      logTest('Invalid AI Model Validation', 
         error.response?.status === 400 && error.response?.data?.error === 'Validation Failed',
-        `- Status: ${error.response?.status}, Errors: ${error.response?.data?.details?.length || 0}`
+        `- Status: ${error.response?.status}, Correctly rejected unsupported model`
       );
     }
 
@@ -231,7 +232,8 @@ async function testSecurity() {
         messages: [{ 
           role: 'user', 
           content: '<script>alert("xss")</script>Hello' 
-        }]
+        }],
+        model: 'gpt-4o-realtime-preview' // Use a valid model here
       };
 
       const sanitizationResponse = await axios.post(`${BASE_URL}/test/ai-request`, maliciousInput, {

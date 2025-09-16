@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { 
   Home, 
   MessageSquare, 
@@ -82,7 +83,7 @@ export default function MobileAI() {
       }));
       
       addMessage('Voice connection established! You can now speak.', 'system');
-    } catch (error) {
+    } catch {
       setVoiceState(prev => ({ ...prev, connectionState: 'error' }));
     }
   };
@@ -176,10 +177,12 @@ export default function MobileAI() {
         }}
       >
         <div className="flex items-center gap-4 mb-4">
-          <img 
+          <Image 
             src={user.avatar} 
             alt="Profile" 
-            className="w-12 h-12 rounded-2xl ring-2 ring-[#4DA3FF]"
+            width={48}
+            height={48}
+            className="rounded-2xl ring-2 ring-[#4DA3FF]"
           />
           <div className="flex-1">
             <h3 className="text-[#E7EBF5] font-semibold">{user.firstName}</h3>
@@ -442,10 +445,12 @@ export default function MobileAI() {
           boxShadow: '0 8px 24px rgba(0,0,0,0.45)'
         }}
       >
-        <img 
+        <Image 
           src={user.avatar} 
           alt="Profile" 
-          className="w-20 h-20 rounded-3xl mx-auto mb-4 ring-2 ring-[#4DA3FF]"
+          width={80}
+          height={80}
+          className="rounded-3xl mx-auto mb-4 ring-2 ring-[#4DA3FF]"
         />
         <h3 className="text-[#E7EBF5] font-bold text-xl mb-1">{user.firstName}</h3>
         <span className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-[#FF6A55] to-[#4DA3FF] text-white text-sm font-medium mb-4">
@@ -481,10 +486,11 @@ export default function MobileAI() {
         style={{ backgroundColor: '#0F1523' }}
       >
         <div className="flex items-center gap-3">
-          <img 
+          <Image 
             src="/png/__Logo_Icon_Colored.png" 
             alt="LIMI" 
-            className="w-8 h-8"
+            width={32}
+            height={32}
           />
           <span className="text-[#E7EBF5] font-bold text-lg">LIMI</span>
         </div>
@@ -493,10 +499,12 @@ export default function MobileAI() {
           <button className="p-2 rounded-xl bg-white/10 text-[#A6B0C1] hover:bg-white/20">
             <Bell className="h-5 w-5" />
           </button>
-          <img 
+          <Image 
             src={user.avatar} 
             alt="Profile" 
-            className="w-8 h-8 rounded-xl ring-1 ring-[#4DA3FF]"
+            width={32}
+            height={32}
+            className="rounded-xl ring-1 ring-[#4DA3FF]"
           />
         </div>
       </motion.div>
@@ -528,7 +536,7 @@ export default function MobileAI() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'home' | 'chat' | 'updates' | 'profile')}
               className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
                 activeTab === tab.id
                   ? 'text-[#4DA3FF]'

@@ -9,6 +9,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -332,10 +333,12 @@ export function VoiceConnection() {
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <img 
+            <Image 
               src="/png/__Wordmark_Green.png" 
               alt="LIMI Logo" 
-              className="h-12 object-contain"
+              width={120}
+              height={48}
+              className="object-contain"
             />
           </div>
           <h2 className="text-2xl font-bold text-center mb-2">

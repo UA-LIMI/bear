@@ -36,8 +36,11 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
-    // Allow frontend URL
-    if (origin === config.frontendUrl) {
+    // Parse multiple frontend URLs (comma-separated)
+    const allowedOrigins = config.frontendUrl.split(',').map(url => url.trim());
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     

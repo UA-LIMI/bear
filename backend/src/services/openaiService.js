@@ -12,8 +12,10 @@
  */
 
 const axios = require('axios');
-const { config } = require('../config');
+const { getConfig } = require('../config');
 const { logger } = require('../middleware/logger');
+
+const config = getConfig();
 
 /**
  * Token cache for managing ephemeral tokens

@@ -331,26 +331,18 @@ export function VoiceConnection() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <motion.div
-            className="flex items-center justify-center space-x-3 mb-4"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
-            <motion.div
-              animate={{ 
-                rotate: state.status === 'connected' ? 360 : 0,
-                scale: state.status === 'connected' ? 1.1 : 1
-              }}
-              transition={{ duration: 2, repeat: state.status === 'connected' ? Infinity : 0, ease: "linear" }}
-            >
-              <Brain className="h-8 w-8 text-blue-600" />
-            </motion.div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Limi AI Voice
-            </h2>
-          </motion.div>
-          <p className="text-muted-foreground">
-            Next-generation real-time voice AI assistant
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <img 
+              src="/png/__Wordmark_Green.png" 
+              alt="LIMI Logo" 
+              className="h-12 object-contain"
+            />
+          </div>
+          <h2 className="text-2xl font-bold text-center mb-2">
+            LIMI AI
+          </h2>
+          <p className="text-muted-foreground text-center">
+            AI made LIMITLESS
           </p>
         </motion.div>
 

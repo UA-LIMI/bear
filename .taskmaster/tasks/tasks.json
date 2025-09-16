@@ -1402,11 +1402,65 @@
         ],
         "priority": "high",
         "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Fix RealtimeSession Disconnect Handling in OpenAI Agents SDK Integration",
+        "description": "Investigate and implement the correct disconnect and close method for RealtimeSession objects in the OpenAI Agents SDK to ensure reliable session termination and resource cleanup.",
+        "details": "1. **Research the latest OpenAI Agents SDK documentation and code samples** to identify the recommended approach for disconnecting and closing RealtimeSession instances, including any recent changes or deprecations in the SDK API. Focus on both JavaScript and Python SDKs as relevant, referencing the official guides and API docs[2][7].\n\n2. **Analyze current disconnect issues**: Review logs and error messages related to session disconnects, such as unexpected WebSocket closures (e.g., code 1000 or 1011), session expiration, or keepalive timeouts[1][3][4]. Identify whether the disconnects are due to improper session closure, missing cleanup logic, or SDK bugs.\n\n3. **Implement the correct disconnect/close logic**: Update the integration code to use the officially supported method for closing a RealtimeSession (e.g., `session.close()` or equivalent), ensuring all event listeners are removed and resources are released. If the SDK provides asynchronous cleanup or requires awaiting a promise, ensure this is handled properly to avoid race conditions or memory leaks[2][7].\n\n4. **Handle edge cases**: Add logic to gracefully handle server-initiated disconnects (e.g., session expiration, keepalive timeouts) and ensure the application can recover or reconnect as needed. Log disconnect reasons and codes for observability. If the SDK or API has known issues (e.g., random disconnects, session update errors), document workarounds or mitigation strategies[1][3][4].\n\n5. **Update documentation**: Document the disconnect/close procedure and any relevant caveats in the integration knowledge base for future maintainers.",
+        "testStrategy": "1. Write unit and integration tests to simulate normal and abnormal session lifecycles, verifying that calling the disconnect/close method reliably terminates the session and releases all resources.\n\n2. Manually test by starting and stopping multiple RealtimeSession instances, observing for memory leaks, lingering event listeners, or unhandled promise rejections.\n\n3. Simulate server-initiated disconnects (e.g., session expiration, keepalive timeout) and verify the application handles these gracefully, logs the correct reason/code, and can recover or reconnect as appropriate.\n\n4. Review logs to confirm that all disconnect events are handled and no orphaned sessions remain.\n\n5. Peer review the implementation and updated documentation for technical accuracy and clarity.",
+        "status": "pending",
+        "dependencies": [
+          11
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Add Mute/Unmute Functionality to Voice Interface",
+        "description": "Implement the ability for users to mute and unmute audio output in the voice interface without disconnecting the active session.",
+        "details": "Integrate mute/unmute controls into the voice interface by leveraging the `mute()` method provided by the OpenAI Agents SDK's RealtimeSession or RealtimeTransportLayer. Ensure the mute action only affects the audio output channel (model-to-user) and does not terminate or disrupt the ongoing session. Update the UI to reflect the current mute state and allow toggling. Handle edge cases such as muting during ongoing audio playback by interrupting or pausing output as needed. Ensure that muting is session-scoped and does not affect other concurrent sessions. Reference the SDK documentation for correct usage of the `mute()` method, and ensure compatibility with both JavaScript and Python implementations if applicable. Document the mute/unmute logic and update any relevant user guides or API documentation.",
+        "testStrategy": "1. Write unit tests to verify that invoking the mute and unmute controls calls the appropriate SDK methods and updates the UI state accordingly. 2. Perform integration tests by starting a session, triggering mute and unmute actions, and confirming that audio output is suppressed or resumed without disconnecting the session. 3. Manually test edge cases, such as muting during active playback and toggling mute rapidly, to ensure stability. 4. Confirm that muting one session does not affect audio output in other sessions. 5. Review logs and event streams to verify that mute/unmute actions are correctly propagated and no unexpected disconnects occur.",
+        "status": "pending",
+        "dependencies": [
+          17
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Test and Assess Frontend State After Recent Changes",
+        "description": "Evaluate the current frontend state following recent updates to determine if simple fixes are sufficient or if a full revert to a known working version is necessary.",
+        "details": "After recent changes to the frontend, particularly those affecting state management, UI components, and integration with backend APIs, conduct a thorough assessment of the application's state behavior. Review logs, error reports, and user feedback to identify any regressions or unexpected behavior. Compare the current state against the previous stable version, focusing on connection status, loading states, error handling, and UI consistency. If issues are found, attempt targeted fixes for isolated problems; if the state is unstable or core functionality is broken, prepare a rollback plan to revert to the last known working version. Document all findings, proposed fixes, and the rationale for any revert decision. Ensure that any fixes or reverts are communicated to the team and tracked in the version control system.",
+        "testStrategy": "1. **Manual Testing**: Interact with all major UI flows, especially voice connection, mute/unmute, and error states, to verify expected behavior. Check for consistency in loading indicators, connection status updates, and error messages. 2. **Automated Testing**: Re-run the full suite of unit, integration, and end-to-end tests, including those for API client, state management, and UI components, to detect regressions. 3. **State Inspection**: Use tools like Redux DevTools or React DevTools to inspect state transitions, action dispatches, and component re-renders, ensuring no unintended side effects from recent changes[1]. 4. **Performance Profiling**: Utilize React Profiler or similar tools to check for performance degradation related to state updates[1]. 5. **Cross-Browser Validation**: Confirm consistent behavior across supported browsers. 6. **Documentation**: Record all test results, issues found, and steps taken to resolve or revert changes. If a revert is necessary, ensure that the rollback is tested in the same manner to confirm stability.",
+        "status": "pending",
+        "dependencies": [
+          5,
+          7,
+          18
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Replace Custom Audio Implementation with react-audio-voice-recorder",
+        "description": "Refactor the frontend to remove the custom audio recording logic and integrate the react-audio-voice-recorder component library, enabling advanced microphone controls and professional audio handling.",
+        "details": "1. Remove all custom audio recording code, including hooks, state management, and event listeners related to MediaRecorder and getUserMedia APIs.\n2. Install the react-audio-voice-recorder package and import its AudioRecorder component and/or useAudioRecorder hook as needed.\n3. Replace existing audio recording UI with the AudioRecorder component, configuring props for professional microphone controls such as noise suppression, echo cancellation, and waveform visualization (using audioTrackConstraints and showVisualizer).\n4. Ensure the onRecordingComplete callback is implemented to handle the recorded audio blob, updating the UI and backend integration as required.\n5. Support download functionality by setting downloadOnSavePress and downloadFileExtension props appropriately, ensuring cross-origin isolation if mp3/wav formats are needed.\n6. Update styles and layout to match the application's design system, using the classes prop for customization.\n7. Remove obsolete code and dependencies related to the previous audio implementation.\n8. Document the new audio recording workflow and update any related onboarding or developer guides.",
+        "testStrategy": "1. Perform manual testing to verify that audio recording, saving, downloading, and playback work as expected in all supported browsers.\n2. Test advanced microphone controls (noise suppression, echo cancellation) by recording in various environments and confirming improved audio quality.\n3. Validate waveform visualization and UI responsiveness during recording.\n4. Confirm that the onRecordingComplete callback correctly processes and displays the recorded audio.\n5. Run automated frontend tests to ensure no regressions in audio recording functionality and UI integration.\n6. Check for removal of all legacy audio code and confirm no unused dependencies remain.",
+        "status": "pending",
+        "dependencies": [
+          19
+        ],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-09-16T20:10:06.792Z",
-      "updated": "2025-09-16T20:25:42.416Z",
+      "updated": "2025-09-16T21:53:33.232Z",
       "description": "Tag created on 9/17/2025"
     }
   }

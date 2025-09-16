@@ -1,0 +1,61 @@
+# Task ID: 2
+# Title: Backend Infrastructure Setup
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Set up the Node.js/Express backend service with secure environment management, middleware, CORS, health checks, monitoring, rate limiting, and error handling.
+# Details:
+Initialize a new Node.js project with Express. Configure middleware for CORS, request parsing, and logging. Implement environment variable management for API keys using dotenv or similar. Add health check endpoints (/healthz, /readyz). Set up request rate limiting and throttling using express-rate-limit. Implement centralized error handling and logging (e.g., winston or pino). Ensure all sensitive data is never exposed in logs. Document API endpoints and environment setup.
+
+# Test Strategy:
+Unit tests for middleware and endpoints. Integration tests for health checks and error handling. Manual verification of environment variable security. Load testing for rate limiting. Automated monitoring of uptime and error rates.
+
+# Subtasks:
+## 1. Initialize Node.js Project and Install Dependencies [pending]
+### Dependencies: None
+### Description: Set up a new Node.js project with Express and install required dependencies such as express, dotenv, cors, express-rate-limit, and a logging library (winston or pino).
+### Details:
+Run `npm init` to create package.json. Install core dependencies using npm. Ensure the project structure is organized for scalability.
+
+## 2. Configure Environment Variable Management [pending]
+### Dependencies: 2.1
+### Description: Implement secure environment variable management using dotenv or a similar library to handle sensitive configuration such as API keys.
+### Details:
+Create a .env file and ensure sensitive data is loaded securely. Validate that environment variables are not exposed in logs or error messages.
+
+## 3. Set Up Core Middleware (CORS, Request Parsing, Logging) [pending]
+### Dependencies: 2.1
+### Description: Configure middleware for CORS, request body parsing (JSON and URL-encoded), and request logging.
+### Details:
+Use cors for cross-origin requests, express.json() and express.urlencoded() for parsing, and a logging middleware for request logs.
+
+## 4. Implement Health Check Endpoints [pending]
+### Dependencies: 2.1
+### Description: Add /healthz and /readyz endpoints to monitor service health and readiness.
+### Details:
+Create simple GET endpoints that return status and optionally check dependencies (e.g., database connection).
+
+## 5. Set Up Rate Limiting and Throttling [pending]
+### Dependencies: 2.1, 2.3
+### Description: Implement request rate limiting and throttling using express-rate-limit to protect against abuse.
+### Details:
+Configure express-rate-limit with appropriate thresholds and error responses. Test for correct enforcement.
+
+## 6. Implement Centralized Error Handling [pending]
+### Dependencies: 2.1, 2.3
+### Description: Set up a centralized error handling middleware to catch and process errors consistently across the application.
+### Details:
+Create an error handler that logs errors and returns sanitized responses. Ensure stack traces and sensitive data are not exposed in production.
+
+## 7. Configure Secure Logging [pending]
+### Dependencies: 2.1, 2.3, 2.6
+### Description: Integrate a logging library (winston or pino) and ensure that logs do not contain sensitive information.
+### Details:
+Set up log levels, output formats, and redact sensitive fields. Test logging for compliance with security requirements.
+
+## 8. Document API Endpoints and Environment Setup [pending]
+### Dependencies: 2.2, 2.3, 2.4, 2.5, 2.6, 2.7
+### Description: Create documentation for all API endpoints, middleware, and environment variable setup.
+### Details:
+Prepare a README or API reference detailing endpoint usage, expected environment variables, and setup instructions.
+

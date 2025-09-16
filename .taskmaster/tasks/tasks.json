@@ -1,0 +1,674 @@
+{
+  "development": {
+    "tasks": [
+      {
+        "id": 2,
+        "title": "Backend Infrastructure Setup",
+        "description": "Set up the Node.js/Express backend service with secure environment management, middleware, CORS, health checks, monitoring, rate limiting, and error handling.",
+        "details": "Initialize a new Node.js project with Express. Configure middleware for CORS, request parsing, and logging. Implement environment variable management for API keys using dotenv or similar. Add health check endpoints (/healthz, /readyz). Set up request rate limiting and throttling using express-rate-limit. Implement centralized error handling and logging (e.g., winston or pino). Ensure all sensitive data is never exposed in logs. Document API endpoints and environment setup.",
+        "testStrategy": "Unit tests for middleware and endpoints. Integration tests for health checks and error handling. Manual verification of environment variable security. Load testing for rate limiting. Automated monitoring of uptime and error rates.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Node.js Project and Install Dependencies",
+            "description": "Set up a new Node.js project with Express and install required dependencies such as express, dotenv, cors, express-rate-limit, and a logging library (winston or pino).",
+            "dependencies": [],
+            "details": "Run `npm init` to create package.json. Install core dependencies using npm. Ensure the project structure is organized for scalability.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Configure Environment Variable Management",
+            "description": "Implement secure environment variable management using dotenv or a similar library to handle sensitive configuration such as API keys.",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Create a .env file and ensure sensitive data is loaded securely. Validate that environment variables are not exposed in logs or error messages.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Set Up Core Middleware (CORS, Request Parsing, Logging)",
+            "description": "Configure middleware for CORS, request body parsing (JSON and URL-encoded), and request logging.",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Use cors for cross-origin requests, express.json() and express.urlencoded() for parsing, and a logging middleware for request logs.\n<info added on 2025-09-15T20:52:58.585Z>\nCore middleware setup is complete with Express, CORS, Helmet, Morgan logging, and custom request logging. The server successfully starts, and all endpoints function correctly. CORS is properly configured for frontend communication, and security middleware (Helmet) is set up with WebRTC-compatible settings. Request logging includes request IDs for tracing. Environment validation works correctly with proper error messages. Minor improvements needed include centralizing version numbers and making the memory threshold in health checks configurable. Rate limiting middleware remains to be implemented. Testing results confirm that all endpoints respond correctly, the 404 handler works properly, and health checks validate environment, memory, API keys, and process status.\n</info added on 2025-09-15T20:52:58.585Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Health Check Endpoints",
+            "description": "Add /healthz and /readyz endpoints to monitor service health and readiness.",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Create simple GET endpoints that return status and optionally check dependencies (e.g., database connection).",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Set Up Rate Limiting and Throttling",
+            "description": "Implement request rate limiting and throttling using express-rate-limit to protect against abuse.",
+            "dependencies": [
+              "2.1",
+              "2.3"
+            ],
+            "details": "Configure express-rate-limit with appropriate thresholds and error responses. Test for correct enforcement.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Centralized Error Handling",
+            "description": "Set up a centralized error handling middleware to catch and process errors consistently across the application.",
+            "dependencies": [
+              "2.1",
+              "2.3"
+            ],
+            "details": "Create an error handler that logs errors and returns sanitized responses. Ensure stack traces and sensitive data are not exposed in production.\n<info added on 2025-09-15T21:14:17.013Z>\nTo enhance the existing error handling middleware, we leveraged the Winston logger by making two key adjustments. First, we ensured that error messages are properly logged with stack traces in development environments but sanitized in production to prevent exposure of sensitive data. Second, we integrated the error handling middleware with Morgan to log HTTP requests and errors consistently across the application. This approach saved significant development time by utilizing existing infrastructure and avoiding over-engineering. The key principle applied here was to first assess what functionality already exists in the codebase before deciding what needs to be built.\n</info added on 2025-09-15T21:14:17.013Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Configure Secure Logging",
+            "description": "Integrate a logging library (winston or pino) and ensure that logs do not contain sensitive information.",
+            "dependencies": [
+              "2.1",
+              "2.3",
+              "2.6"
+            ],
+            "details": "Set up log levels, output formats, and redact sensitive fields. Test logging for compliance with security requirements.\n<info added on 2025-09-15T21:30:34.312Z>\nWinston logging infrastructure has been successfully implemented with comprehensive security measures including proper sanitization of sensitive data in log outputs. The secure logging system is now operational with appropriate log levels, structured JSON formatting, and field redaction capabilities to prevent exposure of confidential information. Console.log consolidation and standardization work has been strategically moved to Task 8 to maintain better project organization and separation of concerns.\n</info added on 2025-09-15T21:30:34.312Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Document API Endpoints and Environment Setup",
+            "description": "Create documentation for all API endpoints, middleware, and environment variable setup.",
+            "dependencies": [
+              "2.2",
+              "2.3",
+              "2.4",
+              "2.5",
+              "2.6",
+              "2.7"
+            ],
+            "details": "Prepare a README or API reference detailing endpoint usage, expected environment variables, and setup instructions.\n<info added on 2025-09-15T21:45:00.904Z>\nThe comprehensive backend standardization has been successfully completed, incorporating key improvements such as centralized logging with Winston, input validation using express-validator, standardized health checks, a robust test suite, and updated documentation. The backend infrastructure is now fully standardized and ready for integration with the AI Gateway. The documentation for API endpoints, middleware, and environment setup has been updated to reflect these changes, ensuring clarity and ease of use for future development and maintenance.\n</info added on 2025-09-15T21:45:00.904Z>",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Vercel AI Gateway Proxy Implementation",
+        "description": "Implement secure Express API endpoints for proxying text-based AI requests to Vercel AI Gateway, with auth, key management, logging, and multi-model support.",
+        "details": "Create /api/ai-proxy endpoint in Express. Integrate Vercel AI Gateway SDK for authentication and request forwarding. Securely store and rotate API keys in environment variables. Implement request/response logging for audit and debugging. Support multiple AI models via gateway configuration. Add error handling and retry logic for failed requests. Ensure all requests are authenticated and authorized before proxying.\n<info added on 2025-09-15T21:28:33.577Z>\nTo enhance the Express.js backend architecture for the Vercel AI Gateway proxy implementation, consider the following standardization and consolidation strategies:\n\n1. **Logging Standardization**: Ensure all logging is centralized using a structured logger like Winston. Remove any `console.log` statements and replace them with Winston-based logging to maintain consistency and facilitate log aggregation.\n\n2. **Request Parsing Consolidation**: Confirm that only `express.json()` and `express.urlencoded()` are used for request parsing. Document this strategy and consider adding `express-validator` for input validation to enhance security.\n\n3. **Configuration Management**: Enforce a strict policy where all configuration is sourced from a centralized module (e.g., `src/config/env.js`). Use ESLint rules to prevent direct access to `process.env` elsewhere in the codebase.\n\n4. **Middleware Optimization**: Review middleware for redundancy and ensure that each middleware is modular and reusable. Remove any duplicate logging or error handling middleware.\n\n5. **Health Check Standardization**: Align health check endpoints (`/healthz`, `/readyz`, `/live`) with cloud-native standards by returning minimal, machine-readable responses. Use `/status` for detailed diagnostics intended for developers.\n\nThese strategies will improve maintainability, observability, and compatibility with industry standards and orchestration tools.\n</info added on 2025-09-15T21:28:33.577Z>",
+        "testStrategy": "Unit and integration tests for proxy endpoint, including auth and error cases. Test key rotation and logging. Verify multi-model support through gateway configuration. Manual testing of request/response flow with real gateway. Automated monitoring for failed requests and retries.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Express API Endpoint Creation",
+            "description": "Create the /api/ai-proxy endpoint in Express with proper routing, middleware setup, and request validation for handling AI proxy requests.",
+            "dependencies": [],
+            "details": "Set up Express router for /api/ai-proxy endpoint. Implement request validation middleware to validate incoming AI requests (prompt, model, parameters). Add CORS configuration for frontend integration. Create request parsing logic for different content types. Implement basic endpoint structure with proper HTTP method handling (POST). Add request size limits and timeout configurations.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Vercel AI Gateway SDK Integration",
+            "description": "Integrate the @ai-sdk/gateway package for authentication and request forwarding to Vercel AI Gateway services.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Install and configure @ai-sdk/gateway package. Implement gateway provider initialization with custom configuration. Set up generateText and other AI SDK functions for request forwarding. Configure gateway with proper base URL and API key handling. Implement request transformation from Express format to AI SDK format. Add response transformation back to Express-compatible format.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "API Key Management and Rotation",
+            "description": "Implement secure storage, retrieval, and rotation of Vercel AI Gateway API keys using environment variables and secure practices.",
+            "dependencies": [],
+            "details": "Set up environment variable configuration for AI_GATEWAY_API_KEY. Implement secure key loading and validation on application startup. Create key rotation mechanism with graceful fallback. Add key health check functionality to verify API key validity. Implement encrypted storage for backup keys if needed. Add logging for key rotation events without exposing sensitive data.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Request and Response Logging System",
+            "description": "Implement comprehensive logging for all AI proxy requests and responses for audit trails and debugging purposes.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Set up structured logging with appropriate log levels (info, warn, error). Implement request logging with sanitized data (no sensitive information). Add response logging with status codes and processing times. Create audit trail for all AI model interactions. Implement log rotation and retention policies. Add correlation IDs for request tracking. Include error logging with stack traces and context.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Multi-Model Support Configuration",
+            "description": "Implement support for multiple AI models through gateway configuration, allowing dynamic model selection and routing.",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Create model configuration mapping for supported providers (OpenAI, Anthropic, xAI, Google, Meta, Mistral). Implement dynamic model selection based on request parameters. Add model validation to ensure requested models are available. Create model-specific parameter handling and transformation. Implement fallback logic for unavailable models. Add model usage tracking and statistics.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Error Handling and Retry Logic",
+            "description": "Implement robust error handling and retry mechanisms for failed AI Gateway requests with exponential backoff and circuit breaker patterns.",
+            "dependencies": [
+              "3.2",
+              "3.4"
+            ],
+            "details": "Implement exponential backoff retry logic for transient failures. Add circuit breaker pattern to prevent cascade failures. Create comprehensive error classification (network, API, validation errors). Implement timeout handling for long-running requests. Add rate limiting protection and queue management. Create detailed error responses with appropriate HTTP status codes. Implement retry limits and failure thresholds.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Authentication and Authorization",
+            "description": "Implement secure authentication and authorization mechanisms to ensure only authorized requests are proxied to the AI Gateway.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Implement JWT token validation middleware for request authentication. Add API key authentication as alternative auth method. Create user authorization checks before proxying requests. Implement rate limiting per authenticated user. Add request origin validation and CORS security. Create audit logging for authentication events. Implement session management and token refresh logic if needed.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "OpenAI Client Secret Generation Endpoint",
+        "description": "Build a secure API endpoint for generating ephemeral client secrets for OpenAI real-time voice, with token management, auth, and audit logging.",
+        "status": "done",
+        "dependencies": [
+          2,
+          "11"
+        ],
+        "priority": "high",
+        "details": "Implement /api/generate-client-secret endpoint using POST https://api.openai.com/v1/realtime/client_secrets with Bearer authentication. Generate ephemeral keys (ek_...) with expiration timestamps. Integrate with @openai/agents-realtime package RealtimeAgent and RealtimeSession classes. Configure token expiration and refresh logic. Secure endpoint with authentication (e.g., JWT or API key). Log all token generation events for audit. Handle errors and edge cases (e.g., OpenAI API downtime). Reference comprehensive implementation specifications in .taskmaster/docs/research/IMPLEMENTATION_GUIDE.md.",
+        "testStrategy": "Unit tests for token generation and expiration logic using exact OpenAI API response format. Integration tests with mocked OpenAI /v1/realtime/client_secrets endpoint. Verify auth and audit logging with ephemeral key tracking. Manual testing of token lifecycle with RealtimeAgent integration. Automated monitoring for token generation failures and ephemeral key validation.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create API Endpoint Structure",
+            "description": "Implement the basic /api/generate-client-secret endpoint with Express.js routing, request validation, and response formatting",
+            "status": "done",
+            "dependencies": [],
+            "details": "Set up Express route handler for POST /api/generate-client-secret. Implement request body validation for required parameters. Define response schema for successful ephemeral token generation (ek_... format) and error cases. Add middleware for CORS, body parsing, and basic request logging. Create endpoint documentation with OpenAPI/Swagger specifications including ephemeral key response format.\n<info added on 2025-09-15T22:14:46.322Z>\nUpdate implementation to use POST /api/client-secret as the endpoint path, following the exact API contract and validation rules specified in .taskmaster/docs/research/IMPLEMENTATION_GUIDE.md:25-45. Integrate rate limiting middleware to prevent abuse and ensure compliance with backend security requirements. Add audit logging for all client secret generation attempts, capturing request metadata and response status for traceability. When handling requests, forward validated payloads to the OpenAI API at POST https://api.openai.com/v1/realtime/client_secrets using Bearer authentication, and return the ephemeral key response in the documented ek_... format. Ensure all error and edge cases are handled according to the research-backed specification.\n</info added on 2025-09-15T22:14:46.322Z>",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "OpenAI API Integration",
+            "description": "Integrate with OpenAI's /v1/realtime/client_secrets endpoint to generate ephemeral tokens",
+            "status": "done",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure OpenAI SDK with organization API key for Bearer authentication. Implement service layer for calling POST https://api.openai.com/v1/realtime/client_secrets endpoint. Handle OpenAI API response parsing for ephemeral keys (ek_...) and expiration timestamps. Add request timeout and retry logic for OpenAI API calls. Implement proper error mapping from OpenAI responses to client responses. Reference .taskmaster/docs/research/ for exact API specifications.\n<info added on 2025-09-15T22:16:48.904Z>\nImplement the OpenAI API integration using axios for making a POST request to the https://api.openai.com/v1/realtime/client_secrets endpoint with Bearer authentication. Set a request timeout of 10 seconds and implement retry logic for handling transient errors. Ensure proper error handling by mapping OpenAI API responses to client-friendly error messages. Reference the implementation template provided in CODE_TEMPLATES.md for detailed code structure. Additionally, parse the OpenAI API response to extract ephemeral keys (ek_...) and their expiration timestamps, ensuring these are correctly stored and managed within the application.\n</info added on 2025-09-15T22:16:48.904Z>\n<info added on 2025-09-15T22:50:56.414Z>\nCRITICAL LESSON LEARNED: When encountering errors (e.g., session.capabilities parameter format issue), systematically debug the specific parameter or implementation detail rather than questioning the overall architectural approach. The backend proxy pattern for generating ephemeral tokens via the OpenAI /v1/realtime/client_secrets endpoint is confirmed as the correct and standard approach. Implementation is validated with the gpt-4o-realtime-preview model. Always address errors by focused debugging—do not abandon the established plan or research without clear evidence of a fundamental flaw.\n</info added on 2025-09-15T22:50:56.414Z>",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Token Lifecycle Management",
+            "description": "Implement ephemeral token expiration tracking, refresh logic, and cleanup mechanisms",
+            "status": "done",
+            "dependencies": [
+              2
+            ],
+            "details": "Create ephemeral token storage mechanism (in-memory cache or Redis) for tracking active ek_... tokens. Implement token expiration validation using OpenAI-provided timestamps and automatic cleanup. Build refresh logic for tokens nearing expiration. Add token revocation capability for security incidents. Create background job for expired ephemeral token cleanup and metrics collection.",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Authentication and Authorization",
+            "description": "Secure the endpoint with JWT or API key authentication and implement authorization checks",
+            "status": "done",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement JWT token validation middleware for request authentication. Add API key authentication as alternative auth method. Create user/client authorization checks for ephemeral token generation limits. Implement rate limiting per authenticated user/client. Add role-based access control for different token types or permissions.",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Audit Logging System",
+            "description": "Implement comprehensive audit logging for all ephemeral token generation events and security monitoring",
+            "status": "done",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Create structured logging for all ephemeral token generation requests and responses including ek_... token IDs. Log authentication events, failures, and security violations. Implement audit trail with user identification, timestamps, and request metadata. Add log aggregation and monitoring alerts for suspicious activity. Create audit log retention and archival policies for ephemeral token tracking.",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Error Handling and Edge Cases",
+            "description": "Implement robust error handling for OpenAI API downtime, network issues, and other edge cases",
+            "status": "done",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Add circuit breaker pattern for OpenAI /v1/realtime/client_secrets API failures. Implement graceful degradation when OpenAI service is unavailable. Handle network timeouts, connection errors, and malformed responses from ephemeral token endpoint. Add health check endpoint for monitoring service status. Create fallback mechanisms and user-friendly error messages for all failure scenarios.",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "RealtimeAgent Integration",
+            "description": "Integrate generated ephemeral tokens with @openai/agents-realtime package RealtimeAgent and RealtimeSession classes",
+            "status": "done",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Import and configure @openai/agents-realtime package. Implement RealtimeAgent initialization using generated ephemeral tokens (ek_...). Configure RealtimeSession with proper token lifecycle management. Add token refresh handling within RealtimeAgent context. Create helper functions for seamless integration between backend token generation and frontend realtime agent usage. Reference research documentation for exact integration patterns.",
+            "testStrategy": "Unit tests for RealtimeAgent initialization with ephemeral tokens. Integration tests for token refresh within active sessions. Manual testing of realtime voice functionality with generated tokens. Verify proper cleanup when tokens expire during active sessions."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Frontend Voice Connection UI",
+        "description": "Develop the Next.js frontend voice interface with connection controls, status indicators, and error feedback using shadcn/ui components.",
+        "details": "Create a new Next.js 14 page with shadcn/ui for UI components. Implement connect/disconnect buttons. Show real-time connection status (disconnected/connecting/connected). Add visual feedback for active sessions and connection quality. Display error states clearly. Ensure UI is minimal and intuitive. Handle microphone permission requests. Integrate with backend for initial setup.",
+        "testStrategy": "Component unit tests with React Testing Library. Manual UI/UX testing for connection flow and error states. Cross-browser testing (Chrome, Firefox, Safari, Edge). Accessibility testing. Automated visual regression testing.",
+        "priority": "medium",
+        "dependencies": [
+          2
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Setup Next.js 14 Page with Shadcn UI",
+            "description": "Create a new Next.js 14 page and integrate Shadcn UI for UI components.",
+            "dependencies": [],
+            "details": "Use Shadcn UI components for a minimal and intuitive UI.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Connection Controls",
+            "description": "Add connect/disconnect buttons using Shadcn UI components.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Ensure buttons are responsive and accessible.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Develop Real-Time Status Indicators",
+            "description": "Show real-time connection status (disconnected/connecting/connected) and add visual feedback for active sessions and connection quality.",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "Use Shadcn UI components for status indicators.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Handle Microphone Permissions and Error Feedback",
+            "description": "Implement microphone permission requests and display error states clearly.",
+            "dependencies": [
+              "5.3"
+            ],
+            "details": "Ensure error messages are clear and actionable.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate with Backend for Initial Setup",
+            "description": "Integrate the frontend with the backend for initial setup and connection management.",
+            "dependencies": [
+              "5.4"
+            ],
+            "details": "Use API calls to synchronize UI with backend events.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "WebRTC Voice Connection Logic",
+        "description": "Implement client-side WebRTC voice connection to OpenAI using ephemeral tokens, with state management, reconnection, and cleanup.",
+        "details": "Retrieve client secret from backend endpoint. Initialize OpenAI Agents SDK with the token. Set up WebRTC for low-latency audio streaming to OpenAI. Manage connection state (connecting, connected, disconnected). Implement automatic reconnection on drop. Handle microphone setup and permissions. Clean up resources on disconnect. Ensure no API keys are exposed client-side.",
+        "testStrategy": "Unit tests for connection state management. Integration tests with mocked backend and OpenAI services. Manual testing of voice latency and reconnection. Automated monitoring for connection failures. Cross-browser compatibility testing.",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Retrieve Ephemeral Client Secret",
+            "description": "Fetch a short-lived client secret from the backend endpoint for secure OpenAI WebRTC authentication.",
+            "dependencies": [],
+            "details": "Implement API call to backend /api/generate-client-secret. Handle loading, error, and success states. Ensure the secret is never exposed in logs or client-side storage.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Initialize OpenAI Agents SDK",
+            "description": "Configure and initialize the OpenAI Agents SDK client-side using the retrieved ephemeral token.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Pass the client secret to the SDK initialization logic. Validate SDK readiness and handle initialization errors. Ensure no API keys are exposed client-side.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "WebRTC Connection Setup",
+            "description": "Establish a WebRTC peer connection for low-latency audio streaming to OpenAI.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Create RTCPeerConnection, configure ICE servers, and set up SDP offer/answer exchange with OpenAI's /v1/realtime endpoint. Add local audio track from microphone. Initialize DataChannel for event signaling.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Connection State Management",
+            "description": "Track and manage WebRTC connection state (connecting, connected, disconnected).",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Implement state machine for connection lifecycle. Emit events for UI feedback. Synchronize state with global app state management.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Automatic Reconnection Logic",
+            "description": "Detect connection drops and automatically attempt reconnection with backoff.",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Monitor connection health. On failure, clean up existing resources, retrieve a new client secret, and reinitialize the connection. Implement exponential backoff to avoid flooding.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Microphone Setup and Permissions",
+            "description": "Handle microphone access, permissions, and audio stream management.",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Request user microphone permission. Handle denial and retry logic. Manage audio stream lifecycle, ensuring proper cleanup on disconnect.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Resource Cleanup and Security Validation",
+            "description": "Ensure proper cleanup of WebRTC resources and validate no sensitive data is exposed.",
+            "dependencies": [
+              "6.3",
+              "6.4",
+              "6.5",
+              "6.6"
+            ],
+            "details": "Release media tracks, close peer connections, and clean up event listeners on disconnect. Audit client-side code and network traffic to confirm no API keys or secrets are exposed.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Frontend-Backend Integration & State Management",
+        "description": "Integrate frontend with backend APIs, implement error handling, loading states, and connection status synchronization.",
+        "details": "Create API client in Next.js for backend communication (e.g., using axios or fetch). Implement global state management (e.g., Zustand or Context API) for connection status. Handle authentication flow if required. Show loading states during API calls. Implement robust error handling and user feedback. Synchronize UI with backend connection events.",
+        "testStrategy": "Unit tests for API client and state management. Integration tests for end-to-end connection flow. Manual testing of error and loading states. Automated monitoring for API failures. Cross-browser testing.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "API Client Implementation",
+            "description": "Create a centralized API client service in Next.js for backend communication with proper configuration, interceptors, and request/response handling.",
+            "dependencies": [],
+            "details": "Set up axios or fetch-based API client with base URL configuration, request/response interceptors for authentication tokens, error handling, and timeout management. Create typed interfaces for API responses. Implement retry logic for failed requests. Configure environment-specific endpoints.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Global State Management Setup",
+            "description": "Implement global state management solution for connection status, user data, and application state using Zustand or Context API.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Set up Zustand store or React Context for managing connection status, authentication state, and API loading states. Create typed state interfaces and actions. Implement state persistence for user preferences. Add state selectors and hooks for component consumption.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Authentication Flow Integration",
+            "description": "Implement complete authentication flow with token management, automatic refresh, and secure storage.",
+            "dependencies": [
+              "7.1",
+              "7.2"
+            ],
+            "details": "Create authentication service with login/logout functionality. Implement JWT token storage in httpOnly cookies or secure localStorage. Add automatic token refresh logic. Create protected route components and authentication guards. Handle authentication errors and redirects.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Loading States and UI Feedback",
+            "description": "Implement comprehensive loading states, progress indicators, and user feedback components throughout the application.",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Create reusable loading components (spinners, skeletons, progress bars). Implement global loading state management. Add loading overlays for API calls. Create toast notifications for success/error feedback. Implement optimistic UI updates where appropriate.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Error Handling and User Feedback",
+            "description": "Build robust error handling system with user-friendly error messages, retry mechanisms, and fallback UI components.",
+            "dependencies": [
+              "7.1",
+              "7.2"
+            ],
+            "details": "Create centralized error handling service with error categorization. Implement user-friendly error messages and recovery suggestions. Add error boundaries for React components. Create retry mechanisms for failed API calls. Implement offline detection and appropriate UI feedback.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Backend Event Synchronization",
+            "description": "Implement real-time synchronization between frontend UI and backend connection events using WebSocket or Server-Sent Events.",
+            "dependencies": [
+              "7.1",
+              "7.2",
+              "7.3"
+            ],
+            "details": "Set up WebSocket or SSE connection for real-time updates. Implement event listeners for connection status changes. Create UI components that react to backend events. Handle connection drops and reconnection logic. Implement heartbeat mechanism for connection health monitoring.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Consolidate Logging System with Winston Logger",
+        "description": "Replace all console.log statements with Winston logger and integrate Winston requestLogger middleware for consistent logging across the application.",
+        "details": "1. **Remove Console Logs**: Replace all `console.log` statements in `app.js` with Winston logger calls. Ensure that sensitive data is not logged. 2. **Configure Winston Logger**: Set up a shared Winston logger instance in `logger.js` with appropriate log levels and transports (e.g., console, file). 3. **Integrate RequestLogger Middleware**: Use the Winston requestLogger middleware from `logger.js` to log incoming requests and responses in Express routes. 4. **Ensure Consistency**: Verify that all middleware and routes use the shared Winston logger for structured logging. 5. **Test Logging**: Validate that logs are correctly written to designated transports without exposing sensitive information.",
+        "testStrategy": "1. **Unit Tests**: Write unit tests to verify that console logs are replaced and Winston logs are correctly generated. 2. **Integration Tests**: Test that the requestLogger middleware logs requests and responses as expected. 3. **Manual Verification**: Check log files and console output for consistency and absence of sensitive data. 4. **Load Testing**: Perform load testing to ensure logging does not impact performance.",
+        "status": "done",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Add Input Validation with express-validator",
+        "description": "Implement request validation middleware using express-validator for all API endpoints that accept user input, ensuring enhanced security and data quality.",
+        "details": "Integrate express-validator middleware to validate and sanitize all incoming request data for endpoints that process user input, such as /api/ai-proxy and /api/generate-client-secret. Define validation rules for each field (e.g., required, format, length, custom patterns) using express-validator's chainable API. For example, validate that API keys are non-empty strings, email fields match email format, and passwords meet complexity requirements. Sanitize inputs to prevent injection and normalize data (e.g., trim whitespace, normalize email case). Centralize error handling to return structured validation error responses (field-by-field details) in a consistent format. Ensure validation is applied before any business logic or external API calls. Document all validation rules and error responses for frontend integration. Example implementation for a registration endpoint:\n\n```js\napp.post('/register', [\n  body('name').notEmpty().trim().isLength({ min: 2, max: 50 }),\n  body('email').notEmpty().isEmail().normalizeEmail(),\n  body('password').notEmpty().isLength({ min: 8 })\n    .matches(/[A-Z]/).matches(/[0-9]/)\n], (req, res) => {\n  const errors = validationResult(req);\n  if (!errors.isEmpty()) {\n    return res.status(400).json({ errors: errors.array() });\n  }\n  // Proceed if validation passes\n});\n```\nExtend this pattern to all relevant endpoints, ensuring no user input bypasses validation. Consider creating a reusable validation middleware utility if multiple endpoints share similar rules[2][3].",
+        "testStrategy": "Write unit tests for each validation rule to verify correct acceptance and rejection of input values. Perform integration tests by sending requests with valid and invalid data to each endpoint, ensuring the API rejects invalid requests with appropriate error messages and status codes. Test edge cases such as empty fields, malformed data, and injection attempts. Verify that sanitization (e.g., trimming, email normalization) is applied correctly. Check that error responses are consistent and actionable for frontend consumption. Include automated tests in CI/CD to catch regressions. Manual testing with tools like Postman or curl to confirm real-world behavior. Document test cases and expected outcomes for QA review[2][3].",
+        "status": "done",
+        "dependencies": [
+          2
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Standardize Health Check Endpoints",
+        "description": "Refactor health check endpoints to align with cloud-native standards, providing minimal machine-readable responses for /healthz, /readyz, and /live, while reserving detailed diagnostics for /status. Clearly document endpoint semantics.",
+        "details": "Implement standardized health check endpoints in the Express backend to support cloud-native monitoring and orchestration tools. /healthz should return a minimal JSON response (e.g., {\"status\": \"ok\"}) with HTTP 200 if the application is generally healthy, and a non-200 status if not. /readyz should indicate readiness to accept traffic (e.g., {\"ready\": true}), returning HTTP 200 only when all critical dependencies (database, external services) are reachable. /live should return a minimal response (e.g., {\"alive\": true}) with HTTP 200 as long as the process is running, regardless of dependency health. Detailed diagnostic information (e.g., dependency status, metrics, configuration) should be moved to a separate /status endpoint, which is intended for internal use only. Update API documentation to clearly explain the purpose, semantics, and expected responses for each endpoint, following cloud-native conventions[1][2]. Ensure all endpoints are secured and do not expose sensitive information. Consider adding response time metrics to /healthz if relevant for your monitoring setup.",
+        "testStrategy": "Write unit tests to verify each endpoint returns the correct HTTP status and minimal JSON payload under various conditions (e.g., healthy, unhealthy, dependencies down). For /readyz, simulate dependency failures (e.g., database disconnect) and verify the endpoint reflects the correct readiness state. For /live, ensure it always returns 200 while the process is running. For /status, verify it returns detailed diagnostics only when accessed internally. Perform integration tests with monitoring tools to confirm they can parse and act on the machine-readable responses. Test security by verifying that /status is not publicly accessible if sensitive. Update documentation tests to ensure all endpoint semantics are clearly and accurately described.",
+        "status": "done",
+        "dependencies": [
+          2
+        ],
+        "priority": "low",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "OpenAI Realtime API Knowledge Base Creation",
+        "description": "Research, organize, and document all official OpenAI Agents SDK and Realtime API sources from September 2025, creating comprehensive reference documentation for integration teams.",
+        "details": "Create a structured knowledge base in .taskmaster/docs/research/ with clear sections for each major integration area. Research and summarize the latest official OpenAI documentation, SDKs, and API references, focusing on: 1) Client secret generation endpoints and authentication (including /v1/realtime/client_secrets, token management, and audit logging), 2) WebRTC vs WebSocket transport mechanisms (pros, cons, and implementation patterns), 3) RealtimeAgent and RealtimeSession configuration (initialization, state management, and lifecycle), 4) Audio processing and microphone setup (direct audio streaming, encoding, and device handling), 5) Error handling and connection management (timeouts, retries, and recovery), 6) Model configuration and streaming (model selection, streaming parameters, and performance tuning), 7) Tools integration (remote MCP servers, SIP calling, image input), 8) Context management (session state, conversation history, and multimodal context), 9) Session lifecycle and interruption handling (pause, resume, and graceful termination).\n\nFor each section, provide concise explanations, code snippets (e.g., WebSocket setup, session initialization, error handling), configuration examples, and links to official sources. Highlight differences between traditional voice AI pipelines and the new direct speech-to-speech processing of gpt-realtime, emphasizing latency, fidelity, and development complexity[1][3]. Document new features such as image input, SIP support, reusable prompts, and enterprise compliance (e.g., EU Data Residency)[1][2]. Include best practices for production deployment, such as monitoring, logging, and scalability considerations. Store all findings in markdown files with a consistent structure, ensuring the knowledge base is easily navigable and referenceable by all integration teams.",
+        "testStrategy": "Verify completeness and accuracy by cross-referencing each documentation section with the latest official OpenAI sources and SDKs. Conduct peer reviews with integration engineers to ensure clarity, technical correctness, and practical relevance. Test code snippets and configuration examples in a sandbox environment to confirm they work as described. Validate that the knowledge base covers all requested topics and edge cases (e.g., API downtime, session interruption, multimodal context loss). Ensure that the documentation is stored in the correct directory structure and is accessible to the team. Use automated checks (e.g., markdown linting, dead link detection) to maintain quality. Update the knowledge base as new official sources or SDK updates are released.",
+        "status": "in-progress",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "OpenAI Agents SDK Models Guide Extraction",
+            "description": "Research and document all relevant implementation details from the OpenAI Agents SDK Models Guide, focusing on model selection, initialization, configuration, and integration patterns for realtime agents.",
+            "dependencies": [],
+            "details": "Summarize supported models, configuration parameters, and initialization flows. Include code snippets for agent instantiation and model switching. Highlight differences between gpt-realtime and previous models, especially regarding direct speech-to-speech capabilities and latency improvements.\n<info added on 2025-09-15T22:11:50.917Z>\nSupported models for the OpenAI Realtime API currently include gpt-realtime and gpt-4-realtime (also referenced as gpt-4o-realtime-preview in some implementations)[1][2]. These models are designed specifically for low-latency, bidirectional audio streaming and real-time conversational interactions, distinguishing them from previous GPT models that primarily handled text-based, request-response patterns.\n\nConfiguration parameters for RealtimeAgent and RealtimeSession include the model name (e.g., model=\"gpt-4o-realtime-preview\"), API key, base URL, and optional settings such as verbose logging[2]. The API supports WebSocket as the primary transport for real-time audio and event streaming, with no direct mention of WebRTC in the current official integration patterns—WebRTC may be used in custom client-side audio handling but is not part of the core OpenAI Realtime API transport[1][2]. Key session configuration options include instructions for the agent, voice selection, audio transcription model, and turn detection (e.g., server-side voice activity detection)[3]. Additional parameters like temperature and reasoning.effort can be set to influence response creativity and processing depth, though their exact implementation may vary by SDK.\n\nInitialization typically involves creating a WebSocket connection to the OpenAI endpoint with authentication headers, then managing the session lifecycle for sending and receiving audio and events[2]. Below is a minimal Python example for agent instantiation and model switching:\n\n```python\nclass RealtimeApiConnection:\n    def __init__(self, base_uri, api_key=None, model=\"gpt-4o-realtime-preview\"):\n        self.url = f\"{base_uri}/v1/realtime?model={model}\"\n        self.api_key = api_key\n        self.websocket = None\n        self.session = aiohttp.ClientSession()\n\n    async def connect(self):\n        auth = aiohttp.BasicAuth(\"\", self.api_key) if self.api_key else None\n        headers = {\"OpenAI-Beta\": \"realtime=v1\"}\n        self.websocket = await self.session.ws_connect(self.url, auth=auth, headers=headers)\n\n    async def close(self):\n        if self.websocket:\n            await self.websocket.close()\n            self.websocket = None\n```\nTo switch models, update the model parameter in the connection URL during initialization[2].\n\nThe gpt-realtime and gpt-4-realtime models introduce direct speech-to-speech capabilities, enabling real-time audio input and output streaming over WebSocket, with the API managing conversation state, turn-taking, and interruptions seamlessly[1]. This is a significant departure from previous models, which required separate audio processing pipelines and suffered from higher end-to-end latency. The new models also support function calling in real time, with events for streaming function call arguments and completion, though the full function call must be assembled before execution[1]. Audio is transmitted as base64-encoded chunks, supporting uncompressed 16-bit, 24kHz audio (nominal bitrate ~384 kbps, ~500 kbps with base64 overhead, reduced with compression)[1]. The API handles phrase endpointing (turn detection) server-side, further reducing client complexity and latency compared to client-side solutions[1][3].\n\nIn summary, the OpenAI Realtime API and its supported models enable a new class of low-latency, voice-first applications with simplified integration, direct audio streaming, and improved conversational dynamics over previous text-centric GPT models.\n</info added on 2025-09-15T22:11:50.917Z>",
+            "status": "done",
+            "testStrategy": "Cross-reference extracted details with official SDK documentation and test agent initialization code for correctness."
+          },
+          {
+            "id": 2,
+            "title": "Tools Integration Guide Documentation",
+            "description": "Extract and document integration steps and best practices from the Tools Integration Guide, with emphasis on remote MCP server setup, SIP calling, and image input.",
+            "dependencies": [],
+            "details": "Provide configuration examples for MCP server integration, SIP endpoint setup, and image input handling. Include payload structures, authentication requirements, and tool invocation patterns. Document reusable prompt setup and tool approval workflows.",
+            "status": "pending",
+            "testStrategy": "Validate integration steps by simulating tool calls and verifying correct API responses and session behavior."
+          },
+          {
+            "id": 3,
+            "title": "Streaming Guide Implementation Reference",
+            "description": "Summarize and document streaming protocols, focusing on WebRTC and WebSocket transport mechanisms, their pros and cons, and implementation patterns from the Streaming Guide.",
+            "dependencies": [],
+            "details": "Compare WebRTC and WebSocket for audio streaming, including setup, latency, reliability, and scalability. Provide code snippets for both transports. Highlight recommended use cases and fallback strategies.",
+            "status": "pending",
+            "testStrategy": "Test both transport mechanisms in sample applications and measure latency, connection stability, and error handling."
+          },
+          {
+            "id": 4,
+            "title": "AI SDK Extensions Feature Extraction",
+            "description": "Research and document AI SDK Extensions, focusing on advanced configuration, extensibility, and custom session management for realtime agents.",
+            "dependencies": [],
+            "details": "Detail extension points, hooks, and custom middleware for session lifecycle, context management, and multimodal input. Include code examples for extending agent capabilities and integrating with external services.",
+            "status": "pending",
+            "testStrategy": "Implement and test custom extensions in a controlled environment, ensuring compatibility with core SDK features."
+          },
+          {
+            "id": 5,
+            "title": "Voice Agents Quickstart Documentation",
+            "description": "Extract step-by-step setup and initialization instructions from the Voice Agents Quickstart, focusing on rapid prototyping and minimal configuration for realtime voice agents.",
+            "dependencies": [],
+            "details": "Document prerequisites, environment setup, and minimal code to launch a realtime voice agent. Include microphone setup, audio streaming, and session start/stop flows. Highlight common pitfalls and troubleshooting tips.",
+            "status": "done",
+            "testStrategy": "Follow the quickstart steps in a clean environment and verify successful agent deployment and audio streaming."
+          },
+          {
+            "id": 6,
+            "title": "Voice Agents Overview Summary",
+            "description": "Summarize the high-level architecture, capabilities, and use cases of OpenAI voice agents from the Voice Agents Overview documentation.",
+            "dependencies": [],
+            "details": "Provide an overview of the realtime voice agent pipeline, key features (e.g., direct speech-to-speech, low latency, multimodal input), and supported deployment scenarios. Compare with traditional voice AI pipelines.",
+            "status": "pending",
+            "testStrategy": "Review overview content with integration engineers to ensure clarity and alignment with technical documentation."
+          },
+          {
+            "id": 7,
+            "title": "Context Management Guide Extraction",
+            "description": "Document session state, conversation history, and multimodal context handling from the Context Management Guide.",
+            "dependencies": [],
+            "details": "Summarize APIs and patterns for managing session context, storing and retrieving conversation history, and handling multimodal (audio, image, text) context. Include code snippets for context updates and retrieval.",
+            "status": "pending",
+            "testStrategy": "Test context management flows in sample sessions, verifying state persistence and context-aware responses."
+          },
+          {
+            "id": 8,
+            "title": "Realtime API Platform Docs Reference",
+            "description": "Extract and document all official endpoints, authentication flows, error handling, and production best practices from the Realtime API Platform Docs.",
+            "dependencies": [],
+            "details": "Detail client secret generation (/v1/realtime/client_secrets), token management, audit logging, error handling, and connection management. Include configuration examples, monitoring, logging, and scalability recommendations.",
+            "status": "done",
+            "testStrategy": "Test endpoint flows and error scenarios in a sandbox environment, ensuring documentation matches observed API behavior."
+          },
+          {
+            "id": 9,
+            "title": "Realtime WebRTC Platform Docs Extraction",
+            "description": "Summarize WebRTC-specific setup, configuration, and troubleshooting steps from the Realtime WebRTC Platform Docs.",
+            "dependencies": [],
+            "details": "Document WebRTC signaling, ICE server configuration, audio encoding, and device handling. Include code snippets for establishing and managing WebRTC connections. Highlight differences from WebSocket transport.",
+            "status": "done",
+            "testStrategy": "Implement WebRTC connection flows using documented steps and verify successful audio streaming and session management."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-09-15T20:02:22.697Z",
+      "updated": "2025-09-15T23:22:44.316Z",
+      "description": "Tasks for development context"
+    }
+  }
+}

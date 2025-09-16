@@ -1,0 +1,55 @@
+# Task ID: 6
+# Title: WebRTC Voice Connection Logic
+# Status: pending
+# Dependencies: 4, 5
+# Priority: medium
+# Description: Implement client-side WebRTC voice connection to OpenAI using ephemeral tokens, with state management, reconnection, and cleanup.
+# Details:
+Retrieve client secret from backend endpoint. Initialize OpenAI Agents SDK with the token. Set up WebRTC for low-latency audio streaming to OpenAI. Manage connection state (connecting, connected, disconnected). Implement automatic reconnection on drop. Handle microphone setup and permissions. Clean up resources on disconnect. Ensure no API keys are exposed client-side.
+
+# Test Strategy:
+Unit tests for connection state management. Integration tests with mocked backend and OpenAI services. Manual testing of voice latency and reconnection. Automated monitoring for connection failures. Cross-browser compatibility testing.
+
+# Subtasks:
+## 1. Retrieve Ephemeral Client Secret [pending]
+### Dependencies: None
+### Description: Fetch a short-lived client secret from the backend endpoint for secure OpenAI WebRTC authentication.
+### Details:
+Implement API call to backend /api/generate-client-secret. Handle loading, error, and success states. Ensure the secret is never exposed in logs or client-side storage.
+
+## 2. Initialize OpenAI Agents SDK [pending]
+### Dependencies: 6.1
+### Description: Configure and initialize the OpenAI Agents SDK client-side using the retrieved ephemeral token.
+### Details:
+Pass the client secret to the SDK initialization logic. Validate SDK readiness and handle initialization errors. Ensure no API keys are exposed client-side.
+
+## 3. WebRTC Connection Setup [pending]
+### Dependencies: 6.2
+### Description: Establish a WebRTC peer connection for low-latency audio streaming to OpenAI.
+### Details:
+Create RTCPeerConnection, configure ICE servers, and set up SDP offer/answer exchange with OpenAI's /v1/realtime endpoint. Add local audio track from microphone. Initialize DataChannel for event signaling.
+
+## 4. Connection State Management [pending]
+### Dependencies: 6.3
+### Description: Track and manage WebRTC connection state (connecting, connected, disconnected).
+### Details:
+Implement state machine for connection lifecycle. Emit events for UI feedback. Synchronize state with global app state management.
+
+## 5. Automatic Reconnection Logic [pending]
+### Dependencies: 6.4
+### Description: Detect connection drops and automatically attempt reconnection with backoff.
+### Details:
+Monitor connection health. On failure, clean up existing resources, retrieve a new client secret, and reinitialize the connection. Implement exponential backoff to avoid flooding.
+
+## 6. Microphone Setup and Permissions [pending]
+### Dependencies: 6.3
+### Description: Handle microphone access, permissions, and audio stream management.
+### Details:
+Request user microphone permission. Handle denial and retry logic. Manage audio stream lifecycle, ensuring proper cleanup on disconnect.
+
+## 7. Resource Cleanup and Security Validation [pending]
+### Dependencies: 6.3, 6.4, 6.5, 6.6
+### Description: Ensure proper cleanup of WebRTC resources and validate no sensitive data is exposed.
+### Details:
+Release media tracks, close peer connections, and clean up event listeners on disconnect. Audit client-side code and network traffic to confirm no API keys or secrets are exposed.
+

@@ -1,0 +1,47 @@
+---
+description: Questioning and validation approach for preventing over-engineering and ensuring optimal solutions
+globs: **/*
+alwaysApply: true
+---
+
+- **Critical Questioning Pattern:**
+  - **Always ask "Do we need to build this?"** before implementing new functionality
+  - **Question complexity** when solutions seem overly elaborate
+  - **Challenge assumptions** about what needs to be built from scratch
+  - **Validate necessity** of each component and feature
+  - **Example**: "Are you sure we need something like that? Can we use existing components?"
+
+- **Existing Solution Discovery:**
+  - **Check what's already implemented** in the current codebase
+  - **Look for existing libraries** that provide needed functionality
+  - **Examine current dependencies** for unused capabilities
+  - **Search for built-in framework features** before adding new dependencies
+  - **Validate if enhancement is better than replacement**
+
+- **Complexity Validation Questions:**
+  - **"Is this the simplest approach?"** - Always prefer simpler solutions
+  - **"Can existing code be enhanced?"** - Modification over creation
+  - **"Do we already have this functionality?"** - Avoid duplication
+  - **"Is this over-engineering?"** - Question elaborate solutions
+  - **"What's the minimal viable implementation?"** - Start simple, iterate
+
+- **Solution Evaluation Process:**
+  - **Start with existing codebase audit** - What do we already have?
+  - **Check current dependencies** - What capabilities are unused?
+  - **Research standard solutions** - What do others use for this?
+  - **Evaluate complexity vs benefit** - Is the effort justified?
+  - **Choose enhancement over replacement** when possible
+
+- **Implementation Decision Framework:**
+  - **Prefer existing solutions** over custom implementations
+  - **Enhance before replacing** when functionality partially exists
+  - **Use standard libraries** over custom code when appropriate
+  - **Question every new dependency** - Is it really needed?
+  - **Validate against current architecture** - Does it fit the existing pattern?
+
+- **User Feedback Integration:**
+  - **Listen to user questioning** - They often spot over-engineering
+  - **Respond to "are you sure" questions** by re-evaluating approach
+  - **Validate user concerns** about complexity or necessity
+  - **Adjust implementation** based on user feedback about scope
+  - **Acknowledge when user is right** about simpler approaches being better

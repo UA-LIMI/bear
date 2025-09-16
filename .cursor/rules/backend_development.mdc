@@ -1,0 +1,54 @@
+---
+description: Backend development patterns and standards for Node.js/Express applications
+globs: backend/**/*
+alwaysApply: true
+---
+
+- **Express.js Application Structure:**
+  - **Centralize configuration** in dedicated config modules with environment validation
+  - **Use middleware stack** in logical order: security, CORS, parsing, logging, rate limiting
+  - **Implement health check endpoints** compatible with cloud-native standards
+  - **Follow RESTful API patterns** with consistent request/response formats
+  - **Separate concerns** with dedicated route, middleware, and service modules
+
+- **Security Implementation:**
+  - **Never expose API keys** or secrets to frontend applications
+  - **Use ephemeral tokens** for frontend-to-external-API communication
+  - **Implement input validation** with established libraries (express-validator)
+  - **Add input sanitization** to prevent XSS and injection attacks
+  - **Apply rate limiting** with development-friendly limits that scale for production
+
+- **Logging and Monitoring:**
+  - **Use structured logging** (Winston) consistently across all components
+  - **Avoid console.log** in favor of proper logging libraries
+  - **Include request IDs** for tracing and debugging
+  - **Log security events** and audit trails for compliance
+  - **Sanitize sensitive data** in logs to prevent information leakage
+
+- **Error Handling Patterns:**
+  - **Implement centralized error handling** with consistent response formats
+  - **Use existing error middleware** rather than building custom solutions
+  - **Include research references** in error messages for troubleshooting
+  - **Provide specific error codes** that map to documentation
+  - **Log errors with context** including request details and stack traces
+
+- **API Development Standards:**
+  - **Validate all inputs** using middleware before processing
+  - **Return consistent response formats** with request IDs and timestamps
+  - **Implement proper HTTP status codes** for different scenarios
+  - **Include pagination support** for list endpoints
+  - **Add versioning strategy** for API evolution
+
+- **Testing and Quality:**
+  - **Create comprehensive test suites** covering success and failure scenarios
+  - **Test rate limiting** and security features thoroughly
+  - **Validate input validation** with both valid and invalid data
+  - **Test error handling** for all error scenarios
+  - **Monitor performance** and optimize based on metrics
+
+- **Environment and Configuration:**
+  - **Use .env files** for environment-specific configuration
+  - **Validate required variables** on application startup
+  - **Provide .env.example** files for documentation
+  - **Centralize all configuration** in dedicated modules
+  - **Never hardcode** configuration values in application code

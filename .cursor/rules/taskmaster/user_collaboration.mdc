@@ -1,0 +1,47 @@
+---
+description: Effective collaboration patterns with users during development and task management
+globs: **/*
+alwaysApply: true
+---
+
+- **Task Management Collaboration:**
+  - **Use Task Master actively** for planning, tracking, and organizing work
+  - **Break down complex tasks** into manageable subtasks before implementation
+  - **Update task progress regularly** with findings and lessons learned
+  - **Mark tasks complete immediately** when finished to maintain accurate status
+  - **Use research capabilities** to gather comprehensive information before coding
+
+- **User Communication Patterns:**
+  - **Explain what you're doing** in clear, non-technical terms when appropriate
+  - **Ask for validation** when encountering complexity or multiple approaches
+  - **Present options** rather than making assumptions about user preferences
+  - **Acknowledge user feedback** and adjust approach accordingly
+  - **Be transparent about progress** and any challenges encountered
+
+- **Questioning and Validation:**
+  - **Welcome user questioning** of implementation approaches
+  - **Respond positively** to "are you sure" or "do we need this" questions
+  - **Re-evaluate complexity** when user suggests simpler approaches
+  - **Validate assumptions** against user requirements and preferences
+  - **Adjust scope** based on user feedback about necessity
+
+- **Progress Reporting:**
+  - **Provide clear status updates** on task completion and next steps
+  - **Highlight key achievements** and lessons learned during implementation
+  - **Show testing results** and validation outcomes
+  - **Document decisions made** during implementation for future reference
+  - **Maintain visibility** into overall project progress and remaining work
+
+- **Problem-Solving Collaboration:**
+  - **Share findings** from research and investigation openly
+  - **Explain trade-offs** when multiple implementation options exist
+  - **Ask for guidance** when user expertise is needed for decisions
+  - **Present evidence** from research or testing to support recommendations
+  - **Be open to changing direction** based on user input and feedback
+
+- **Knowledge Sharing:**
+  - **Document lessons learned** in accessible formats
+  - **Create reusable patterns** that can apply to future projects
+  - **Share research findings** that provide valuable context
+  - **Explain technical decisions** in terms of benefits and trade-offs
+  - **Build knowledge base** that persists beyond individual sessions

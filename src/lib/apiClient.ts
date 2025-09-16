@@ -9,7 +9,7 @@
 import axios from 'axios';
 
 // Get backend configuration from environment variables
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://145.79.10.35:3001';
 const aiGatewayApiKey = process.env.NEXT_PUBLIC_AI_GATEWAY_API_KEY;
 
 // Create a new axios instance

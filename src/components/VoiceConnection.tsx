@@ -67,12 +67,13 @@ export function VoiceConnection() {
    */
   const getEphemeralKey = async (): Promise<string> => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://145.79.10.35:3001';
+      // Use Vercel API route as proxy to avoid HTTPS mixed content issues
+      const apiUrl = '/api/client-secret';
       
-      console.log('🔗 Attempting to connect to backend:', backendUrl);
+      console.log('🔗 Attempting to connect via Vercel API proxy:', apiUrl);
       console.log('🔗 Environment:', process.env.NODE_ENV || 'unknown');
       
-      const response = await fetch(`${backendUrl}/api/client-secret`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

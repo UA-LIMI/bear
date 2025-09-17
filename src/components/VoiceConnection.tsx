@@ -68,6 +68,10 @@ export function VoiceConnection() {
   const getEphemeralKey = async (): Promise<string> => {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://145.79.10.35:3001';
+      
+      console.log('🔗 Attempting to connect to backend:', backendUrl);
+      console.log('🔗 Environment:', process.env.NODE_ENV || 'unknown');
+      
       const response = await fetch(`${backendUrl}/api/client-secret`, {
         method: 'POST',
         headers: { 
@@ -81,15 +85,25 @@ export function VoiceConnection() {
         })
       });
 
+      console.log('🔗 Response status:', response.status);
+      console.log('🔗 Response ok:', response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('🔗 Backend error response:', errorData);
         throw new Error(`Backend error: ${errorData.message} (${errorData.code})`);
       }
 
       const data = await response.json();
+      console.log('🔗 Success! Received token data:', {
+        hasKey: !!data.ephemeralKey,
+        keyPrefix: data.ephemeralKey?.slice(0, 10),
+        sessionId: data.sessionId
+      });
       
       // Validate ephemeral key format (research requirement)
       if (!data.ephemeralKey || !data.ephemeralKey.startsWith('ek_')) {
+        console.error('🔗 Invalid key format received:', data.ephemeralKey);
         throw new Error('Invalid ephemeral key format received from backend');
       }
 

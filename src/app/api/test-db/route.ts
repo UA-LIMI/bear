@@ -34,9 +34,15 @@ export async function GET() {
     });
 
   } catch (error) {
+    console.error('Database test error:', error);
     return Response.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      env_check: {
+        supabase_url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        supabase_service_key: !!process.env.SUPABASE_SERVICE_KEY
+      },
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

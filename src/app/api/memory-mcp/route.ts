@@ -14,10 +14,11 @@ const supabase = createClient(
 );
 
 // MQTT client setup (lazy initialization for Vercel Functions)
-let mqttClient: any = null;
+let mqttClient: unknown = null;
 
 const getMqttClient = () => {
   if (!mqttClient) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mqtt = require('mqtt');
     mqttClient = mqtt.connect(process.env.MQTT_BROKER_URL || 'mqtt://mqtt.limilighting.com:1883', {
       username: process.env.MQTT_USERNAME || 'mcp',
@@ -48,7 +49,7 @@ const handler = createMcpHandler(
       async ({ userId, address, city, country, sessionId, source }) => {
         try {
           // Update current location in profiles
-          const { data: profileUpdate, error: profileError } = await supabase
+          const { error: profileError } = await supabase
             .from('profiles')
             .update({
               current_location_address: address,
@@ -229,7 +230,7 @@ const handler = createMcpHandler(
           const mqttTopic = topic || room;
           const client = getMqttClient();
           
-          client.publish(mqttTopic, command, (error: any) => {
+          client.publish(mqttTopic, command, (error: Error | null) => {
             if (error) {
               resolve({
                 content: [{
@@ -269,7 +270,7 @@ const handler = createMcpHandler(
       },
       async ({ userId, entityName, entityType, category, observations, metadata, sourceAgent, confidenceScore }) => {
         try {
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('guest_entities')
             .upsert({
               user_id: userId,

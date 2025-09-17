@@ -2,7 +2,7 @@
 // MULTI-AGENT CONTEXT MANAGEMENT
 // ===================================
 
-import { supabase, supabaseAdmin } from './supabase-auth'
+import { supabase } from './supabase-auth'
 
 // ===================================
 // TYPES
@@ -30,7 +30,7 @@ export interface GuestEntity {
   confidence_score: number
   source_agent: string
   observations: string[]
-  metadata: any
+  metadata: Record<string, unknown>
   created_at: string
   updated_at: string
 }
@@ -43,7 +43,7 @@ export interface GuestRelation {
   relation_type: string
   strength: number
   source_agent: string
-  metadata: any
+  metadata: Record<string, unknown>
   created_at: string
 }
 
@@ -72,8 +72,8 @@ export class AgentContextManager {
   
   async logAgentExecution(
     agentName: string,
-    inputData: any,
-    outputData: any,
+    inputData: Record<string, unknown>,
+    outputData: Record<string, unknown>,
     executionTimeMs: number,
     status: 'completed' | 'failed' = 'completed',
     errorMessage?: string
@@ -128,7 +128,7 @@ export class AgentContextManager {
     entityType: string,
     category: string,
     observations: string[],
-    metadata: any = {},
+    metadata: Record<string, unknown> = {},
     sourceAgent: string,
     confidenceScore: number = 0.5
   ): Promise<AgentContextResult> {
@@ -229,7 +229,7 @@ export class AgentContextManager {
     relationType: string,
     strength: number = 0.5,
     sourceAgent: string,
-    metadata: any = {}
+    metadata: Record<string, unknown> = {}
   ): Promise<AgentContextResult> {
     try {
       // Get entity IDs
@@ -467,7 +467,7 @@ export class AgentContextManager {
     reasoning: string,
     priority: number = 2,
     validUntil?: Date,
-    metadata: any = {}
+    metadata: Record<string, unknown> = {}
   ): Promise<AgentContextResult> {
     try {
       const { data, error } = await supabase

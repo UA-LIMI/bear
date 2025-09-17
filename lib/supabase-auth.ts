@@ -46,7 +46,7 @@ export interface HotelProfile {
 
 export interface AuthResult {
   success: boolean
-  user?: any
+  user?: Record<string, unknown>
   profile?: HotelProfile
   error?: string
 }

@@ -28,6 +28,7 @@ export default function UserLocationDisplay({ userId, className = '' }: UserLoca
 
   useEffect(() => {
     fetchUserLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const fetchUserLocation = async () => {

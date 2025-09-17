@@ -58,45 +58,15 @@ interface AIMessage {
   timestamp: Date;
 }
 
-const guestProfiles: GuestProfile[] = [
-  {
-    id: 'umer',
-    name: 'Umer',
-    status: 'inRoom',
-    membershipTier: 'Platinum Elite',
-    profile: {
-      occupation: 'Business Executive',
-      aiPrompt: 'Professional, efficient, business-focused assistant'
-    },
-    stayInfo: { hotel: 'JW Marriott Shenzhen', room: '2847' }
-  },
-  {
-    id: 'taylor',
-    name: 'Taylor',
-    status: 'bookedOffsite',
-    membershipTier: 'Titanium Elite',
-    profile: {
-      occupation: 'Hedge Fund CEO',
-      aiPrompt: 'Discreet, sophisticated, VIP-level service'
-    },
-    stayInfo: { hotel: 'JW Marriott Shenzhen', eta: '2h 15m' }
-  },
-  {
-    id: 'karen',
-    name: 'Karen',
-    status: 'notLinked',
-    membershipTier: 'Gold Elite',
-    profile: {
-      occupation: 'Doctor & Mother',
-      aiPrompt: 'Warm, family-oriented assistant'
-    }
-  }
-];
+// Guest profiles will be loaded from Supabase database
+let guestProfiles: GuestProfile[] = [];
 
 export default function GuestInterface() {
   const [selectedGuest, setSelectedGuest] = useState<GuestProfile | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(true);
   const [messages, setMessages] = useState<AIMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [profiles, setProfiles] = useState<GuestProfile[]>([]);
   const [inputText, setInputText] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [voiceConnected, setVoiceConnected] = useState(false);
@@ -104,6 +74,61 @@ export default function GuestInterface() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [session, setSession] = useState<RealtimeSession | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+
+  // Load guest profiles from Supabase
+  useEffect(() => {
+    loadGuestProfiles();
+  }, []);
+
+  const loadGuestProfiles = async () => {
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, guest_type, room_number, current_location_address, current_location_city, loyalty_points')
+        .order('loyalty_points', { ascending: false });
+
+      if (error) {
+        console.error('Error loading guest profiles:', error);
+        return;
+      }
+
+      // Convert Supabase data to GuestProfile format
+      const convertedProfiles: GuestProfile[] = data.map(profile => ({
+        id: profile.username,
+        name: profile.display_name,
+        status: 'inRoom' as const,
+        membershipTier: profile.guest_type === 'suite' ? 'Platinum Elite' : 
+                       profile.guest_type === 'platinum' ? 'Platinum Elite' :
+                       profile.guest_type === 'vip' ? 'VIP Elite' : 'Gold Elite',
+        profile: {
+          occupation: profile.username === 'umer_asif' ? 'Hotel Owner' :
+                     profile.username === 'taylor_ogen' ? 'Sustainability Researcher' :
+                     profile.username === 'karen_law' ? 'Business Professional' :
+                     profile.username === 'sarah_smith' ? 'Leisure Traveler' : 'Guest',
+          aiPrompt: `${profile.display_name} - ${profile.guest_type} guest at The Peninsula Hong Kong`
+        },
+        stayInfo: { 
+          hotel: 'The Peninsula Hong Kong', 
+          room: profile.room_number,
+          location: profile.current_location_address
+        }
+      }));
+
+      setProfiles(convertedProfiles);
+      guestProfiles = convertedProfiles; // Update global array
+      
+    } catch (error) {
+      console.error('Error loading guest profiles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Mock data that would come from Supabase
   const mockRoomControls = {
@@ -284,7 +309,7 @@ export default function GuestInterface() {
       <div className="w-full max-w-sm">
         <select
           onChange={(e) => {
-            const guest = guestProfiles.find(g => g.id === e.target.value);
+            const guest = profiles.find(g => g.id === e.target.value);
             if (guest) {
               setSelectedGuest(guest);
               setShowUserDropdown(false);
@@ -293,7 +318,7 @@ export default function GuestInterface() {
           className="w-full p-4 rounded-xl bg-white/10 text-[#f3ebe2] border border-white/20"
         >
           <option value="">Select Guest</option>
-          {guestProfiles.map(guest => (
+          {profiles.map(guest => (
             <option key={guest.id} value={guest.id}>
               {guest.name} - {guest.membershipTier}
             </option>
@@ -571,6 +596,17 @@ export default function GuestInterface() {
       )}
     </AnimatePresence>
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#292929] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f3ebe2] mx-auto"></div>
+          <p className="mt-4 text-[#f3ebe2]">Loading Hong Kong guests...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showUserDropdown) {
     return renderUserSelection();

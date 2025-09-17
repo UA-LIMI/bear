@@ -82,26 +82,18 @@ export default function GuestInterface() {
 
   const loadGuestProfiles = async () => {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const response = await fetch('/api/get-guests');
+      const result = await response.json();
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, guest_type, room_number, current_location_address, current_location_city, loyalty_points')
-        .order('loyalty_points', { ascending: false });
-
-      if (error) {
-        console.error('Error loading guest profiles:', error);
+      if (!result.success) {
+        console.error('Error loading guest profiles:', result.error);
         return;
       }
 
       // Convert Supabase data to GuestProfile format
-      const convertedProfiles: GuestProfile[] = data.map(profile => ({
-        id: profile.username,
-        name: profile.display_name,
+      const convertedProfiles: GuestProfile[] = result.guests.map((profile: Record<string, unknown>) => ({
+        id: profile.username as string,
+        name: profile.display_name as string,
         status: 'inRoom' as const,
         membershipTier: profile.guest_type === 'suite' ? 'Platinum Elite' : 
                        profile.guest_type === 'platinum' ? 'Platinum Elite' :
@@ -111,12 +103,12 @@ export default function GuestInterface() {
                      profile.username === 'taylor_ogen' ? 'Sustainability Researcher' :
                      profile.username === 'karen_law' ? 'Business Professional' :
                      profile.username === 'sarah_smith' ? 'Leisure Traveler' : 'Guest',
-          aiPrompt: `${profile.display_name} - ${profile.guest_type} guest at The Peninsula Hong Kong`
+          aiPrompt: `${profile.display_name as string} - ${profile.guest_type as string} guest at The Peninsula Hong Kong`
         },
         stayInfo: { 
           hotel: 'The Peninsula Hong Kong', 
-          room: profile.room_number,
-          location: profile.current_location_address
+          room: profile.room_number as string,
+          location: profile.current_location_address as string
         }
       }));
 

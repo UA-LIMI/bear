@@ -13,8 +13,8 @@ export interface AgentExecution {
   agent_type_id: number
   user_id: string
   session_id: string
-  input_data: any
-  output_data: any
+  input_data: Record<string, unknown>
+  output_data: Record<string, unknown>
   execution_time_ms: number
   status: 'pending' | 'completed' | 'failed'
   error_message?: string
@@ -49,7 +49,7 @@ export interface GuestRelation {
 
 export interface AgentContextResult {
   success: boolean
-  data?: any
+  data?: unknown
   error?: string
 }
 
@@ -421,7 +421,7 @@ export class AgentContextManager {
     patternType: string,
     patternName: string,
     description: string,
-    frequencyData: any,
+    frequencyData: Record<string, unknown>,
     triggers: string[] = [],
     confidenceScore: number = 0.5,
     sampleSize: number = 1
@@ -506,7 +506,7 @@ export class AgentContextManager {
   private generateContextSummary(
     entities: GuestEntity[],
     relations: GuestRelation[],
-    summaries: any[]
+    summaries: Record<string, unknown>[]
   ): string {
     const lightingEntities = entities.filter(e => e.category === 'lighting')
     const behaviorEntities = entities.filter(e => e.category === 'timing' || e.category === 'behavior')

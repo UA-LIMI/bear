@@ -7,16 +7,22 @@ import { z } from 'zod';
 import { createMcpHandler } from 'mcp-handler';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase client setup
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+// Supabase client setup with build-time safety
+const getSupabaseClient = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured');
+  }
+  
+  return createClient(url, key);
+};
 
 // MQTT client setup (lazy initialization for Vercel Functions)
 let mqttClient: unknown = null;
 
-const getMqttClient = () => {
+const getMqttClient = (): { publish: (topic: string, message: string, callback: (error: Error | null) => void) => void } => {
   if (!mqttClient) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mqtt = require('mqtt');
@@ -25,7 +31,7 @@ const getMqttClient = () => {
       password: process.env.MQTT_PASSWORD || 'mcp'
     });
   }
-  return mqttClient;
+  return mqttClient as { publish: (topic: string, message: string, callback: (error: Error | null) => void) => void };
 };
 
 const handler = createMcpHandler(
@@ -49,6 +55,7 @@ const handler = createMcpHandler(
       async ({ userId, address, city, country, sessionId, source }) => {
         try {
           // Update current location in profiles
+          const supabase = getSupabaseClient();
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
@@ -115,6 +122,7 @@ const handler = createMcpHandler(
       },
       async ({ userId }) => {
         try {
+          const supabase = getSupabaseClient();
           const { data, error } = await supabase
             .from('profiles')
             .select('username, display_name, current_location_address, current_location_city, current_location_country, location_updated_at, location_source')
@@ -166,6 +174,7 @@ const handler = createMcpHandler(
       },
       async ({ userId, limit }) => {
         try {
+          const supabase = getSupabaseClient();
           const { data, error } = await supabase
             .from('user_location_history')
             .select('location_address, location_city, location_country, location_source, created_at')
@@ -270,6 +279,7 @@ const handler = createMcpHandler(
       },
       async ({ userId, entityName, entityType, category, observations, metadata, sourceAgent, confidenceScore }) => {
         try {
+          const supabase = getSupabaseClient();
           const { error } = await supabase
             .from('guest_entities')
             .upsert({
@@ -325,6 +335,7 @@ const handler = createMcpHandler(
       },
       async ({ userId, category }) => {
         try {
+          const supabase = getSupabaseClient();
           let query = supabase
             .from('guest_entities')
             .select('*')

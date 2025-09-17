@@ -1456,11 +1456,227 @@
         ],
         "priority": "high",
         "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Research and Plan LIMI Guest Hotel UI System",
+        "description": "Analyze requirements, create a detailed task breakdown, and architect a dynamic UI system for the LIMI Guest hotel platform, focusing on guest-centric features and modern usability standards.",
+        "details": "1. **Requirements Analysis**: Gather and document functional and non-functional requirements for the hotel UI system by reviewing industry standards and stakeholder needs. Focus on guest management, real-time room inventory, multi-channel booking, personalized guest experiences, and efficient check-in/out processes[1][2][3][4]. Identify user roles (guests, receptionists, managers) and their specific UI needs, such as intuitive dashboards, booking flows, and administrative controls.\n\n2. **Dynamic UI Architecture Planning**: Research modern UI architectural patterns suitable for hotel management systems, such as component-based design (React/Next.js), state management strategies, and responsive layouts. Consider integration points for real-time updates (e.g., room availability, guest requests) and support for both web and mobile interfaces. Document approaches for dynamic rendering of guest preferences, smart room controls, and personalized communication panels[3].\n\n3. **Task Breakdown Creation**: Decompose the project into actionable tasks and subtasks, covering UI wireframing, component library selection (e.g., shadcn/ui), API integration points, authentication flows, accessibility compliance, and testing strategies. Map dependencies between tasks and identify milestones for iterative delivery.\n\n4. **Documentation**: Produce a comprehensive planning document outlining requirements, architectural decisions, UI flow diagrams, and the full task breakdown. Include rationale for technology choices and anticipated challenges (e.g., performance, scalability, cross-device compatibility).",
+        "testStrategy": "1. Review the requirements document with stakeholders to ensure completeness and alignment with business goals.\n2. Validate the task breakdown for logical sequencing, coverage of all major UI features, and clear dependencies.\n3. Peer-review the dynamic UI architecture plan with senior engineers to confirm scalability, maintainability, and suitability for real-time hotel operations.\n4. Ensure documentation includes clear diagrams and justifications for all major decisions.\n5. Confirm that the plan addresses accessibility, performance, and cross-device compatibility requirements.",
+        "status": "pending",
+        "dependencies": [
+          5,
+          7
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Build LIMI Guest Hotel UI Core Shell with User Selection Dropdown and View State System",
+        "description": "Develop the foundational UI shell for the LIMI Guest hotel platform, including a user selection dropdown and a system to determine and manage the current view state.",
+        "details": "1. Scaffold the core UI shell using React, establishing a layout that supports modular content areas (e.g., header, sidebar, main content).\n2. Implement a user selection dropdown component that dynamically lists available users (guests, receptionists, managers) using a controlled React component. Ensure accessibility and keyboard navigation support. Use a flexible data structure to allow for future role expansion[1][2][3].\n3. Integrate the dropdown into the shell's header or sidebar, triggering a callback on user selection to update the active user context.\n4. Design and implement a view state determination system: maintain a central state (using React Context or Redux) that tracks the current user and determines which UI view/component should be rendered (e.g., guest dashboard, booking management, admin panel).\n5. Ensure the shell can render different child components based on the current view state, supporting future extensibility for additional views and roles.\n6. Apply consistent styling and responsive design principles to ensure usability across devices.\n7. Document component APIs and state flows for future contributors.",
+        "testStrategy": "1. Unit test the user selection dropdown for correct rendering, option listing, and selection events, including edge cases (e.g., empty user list).\n2. Integration test the shell to verify that selecting a user updates the view state and renders the appropriate UI component.\n3. Manually test the UI in desktop and mobile browsers for layout, accessibility (keyboard navigation, ARIA roles), and responsiveness.\n4. Review state management logic to ensure correct view transitions and no stale state on user changes.\n5. Peer review code for modularity, extensibility, and documentation quality.",
+        "status": "pending",
+        "dependencies": [
+          21
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Scaffold Core UI Shell Layout in React",
+            "description": "Establish the foundational React component structure for the LIMI Guest hotel UI shell, including modular areas for header, sidebar, and main content.",
+            "dependencies": [],
+            "details": "Create a main shell component using functional components and React hooks. Ensure the layout supports dynamic content insertion and future extensibility. Apply responsive design principles for usability across devices.",
+            "status": "in-progress",
+            "testStrategy": "Verify layout renders correctly on various screen sizes. Unit test shell component for correct area rendering."
+          },
+          {
+            "id": 2,
+            "title": "Develop Accessible User Selection Dropdown Component",
+            "description": "Implement a controlled React dropdown that dynamically lists users by role (guests, receptionists, managers), supporting accessibility and keyboard navigation.",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Use a flexible data structure for user roles to allow future expansion. Ensure ARIA attributes and keyboard navigation are implemented for accessibility compliance.",
+            "status": "pending",
+            "testStrategy": "Unit test dropdown for rendering, option listing, selection events, and accessibility features. Test edge cases such as empty user lists."
+          },
+          {
+            "id": 3,
+            "title": "Integrate Dropdown into Shell and Manage Active User Context",
+            "description": "Embed the user selection dropdown into the shell's header or sidebar and trigger a callback to update the active user context upon selection.",
+            "dependencies": [
+              "22.2"
+            ],
+            "details": "Use React Context to manage and propagate the active user state throughout the shell. Ensure seamless integration and state updates on user selection.",
+            "status": "pending",
+            "testStrategy": "Integration test to verify user selection updates context and triggers correct UI changes."
+          },
+          {
+            "id": 4,
+            "title": "Implement View State Determination and Dynamic Rendering System",
+            "description": "Design and build a central state system (using React Context or Redux) that tracks the current user and determines which UI view/component should be rendered.",
+            "dependencies": [
+              "22.3"
+            ],
+            "details": "Map user roles to corresponding views (e.g., guest dashboard, booking management, admin panel). Ensure the system supports future extensibility for new roles and views.",
+            "status": "pending",
+            "testStrategy": "Unit and integration tests for view state transitions and correct component rendering based on active user."
+          },
+          {
+            "id": 5,
+            "title": "Document Component APIs and State Flows",
+            "description": "Create comprehensive documentation for all UI shell components, dropdown logic, context/state management, and view rendering flows.",
+            "dependencies": [
+              "22.4"
+            ],
+            "details": "Include API signatures, state diagrams, and integration points for future contributors. Ensure documentation is clear, up-to-date, and accessible.",
+            "status": "pending",
+            "testStrategy": "Manual review of documentation for completeness and clarity. Peer review by team members."
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "title": "Deploy Supabase Docker Database and Integrate with VPS Backend for Hotel Guest Data Management",
+        "description": "Deploy a self-hosted Supabase instance using Docker on the existing VPS, then integrate the backend service to manage hotel guest data through Supabase's PostgreSQL database and authentication APIs.",
+        "details": "1. **Environment Setup**: Ensure Docker and Docker Compose are installed on the VPS. Clone the official Supabase Docker repository and copy the necessary configuration files to a dedicated project directory[1][3].\n2. **Configuration**: Customize the `.env` file with secure credentials (e.g., `POSTGRES_PASSWORD`, `JWT_SECRET`, `ANON_KEY`, `SERVICE_ROLE_KEY`). Replace all example values with production-grade secrets. Configure `SITE_URL` to match your VPS domain and set up SMTP credentials for email functionality if needed[1][3].\n3. **Deployment**: Start the Supabase services in detached mode using `docker compose up -d`. Verify all containers are healthy with `docker compose ps`[1][3].\n4. **Database Integration**: Modify the existing Express backend to connect to the Supabase PostgreSQL instance. Use environment variables for connection strings and credentials. Implement data models and queries for hotel guest management (e.g., check-in/check-out, room assignment, guest profiles).\n5. **Authentication Integration**: Utilize Supabase's GoTrue service for user authentication. Update the backend to handle JWT validation and role-based access control for hotel staff and guests.\n6. **API Layer**: Expose secure REST or GraphQL endpoints from the backend for frontend consumption, ensuring all sensitive operations are protected by authentication and input validation.\n7. **Security**: Never use default credentials in production. Consider placing Supabase Studio behind a reverse proxy with authentication or a VPN for additional security[1].\n8. **Documentation**: Document the deployment steps, environment variables, and integration points for future maintenance.\n\n**Example: Connecting to Supabase PostgreSQL from Node.js**\n```js\nconst { Pool } = require('pg');\nconst pool = new Pool({\n  user: process.env.DB_USER,\n  host: process.env.DB_HOST,\n  database: process.env.DB_NAME,\n  password: process.env.DB_PASSWORD,\n  port: process.env.DB_PORT,\n});\n```",
+        "testStrategy": "1. **Container Health**: Verify all Supabase Docker containers are running and healthy using `docker compose ps`[3].\n2. **Database Connectivity**: Write integration tests to confirm the backend can establish a connection to the Supabase PostgreSQL database and perform basic CRUD operations on guest data.\n3. **Authentication Flow**: Test user registration, login, and JWT validation using Supabase's GoTrue API. Verify role-based access controls for different user types (guest, staff, admin).\n4. **API Endpoints**: Perform end-to-end tests on all new or modified backend endpoints, ensuring they return correct data and enforce authentication and input validation.\n5. **Security Audit**: Manually review environment variables and configuration files to ensure no default or example secrets are present. Test that sensitive endpoints are not accessible without proper authentication.\n6. **Logging and Monitoring**: Confirm that database and authentication events are logged consistently and can be monitored for errors.\n7. **Documentation Review**: Validate that deployment and integration steps are clearly documented and reproducible.",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Docker Environment and Clone Supabase Repository",
+            "description": "Prepare the VPS environment by ensuring Docker and Docker Compose are installed, then clone the official Supabase repository and set up the project directory structure for deployment.",
+            "dependencies": [],
+            "details": "Verify Docker installation on the VPS using `docker --version` and `docker compose --version`. If not installed, follow official Docker installation guides. Clone the Supabase repository with `git clone --depth 1 https://github.com/supabase/supabase`. Create a dedicated project directory `mkdir supabase-project` and copy Docker compose files using `cp -rf supabase/docker/* supabase-project` and environment template `cp supabase/docker/.env.example supabase-project/.env`.",
+            "status": "pending",
+            "testStrategy": "Verify Docker installation with version commands. Confirm successful repository cloning and proper file structure. Test Docker daemon is running with `docker ps`."
+          },
+          {
+            "id": 2,
+            "title": "Configure Production Environment Variables and Security Settings",
+            "description": "Customize the .env configuration file with production-grade credentials, secure secrets, and hotel-specific settings for the Supabase deployment.",
+            "dependencies": [
+              "23.1"
+            ],
+            "details": "Edit the `.env` file to replace all example values with secure production credentials. Generate strong passwords for `POSTGRES_PASSWORD`, create secure JWT secrets for `JWT_SECRET`, `ANON_KEY`, and `SERVICE_ROLE_KEY`. Configure `SITE_URL` to match the VPS domain. Set up SMTP credentials for email functionality if required. Configure database connection parameters and API keys. Ensure all default credentials are replaced with production-grade secrets.",
+            "status": "pending",
+            "testStrategy": "Validate all environment variables are properly set and no default/example values remain. Test SMTP configuration if email functionality is enabled. Verify JWT secrets are properly formatted and secure."
+          },
+          {
+            "id": 3,
+            "title": "Deploy and Verify Supabase Docker Services",
+            "description": "Start all Supabase services using Docker Compose and verify that all containers are running healthy, with proper service connectivity and functionality.",
+            "dependencies": [
+              "23.2"
+            ],
+            "details": "Navigate to the supabase-project directory and pull the latest Docker images using `docker compose pull`. Start all services in detached mode with `docker compose up -d`. Monitor the startup process and verify all containers reach a healthy state using `docker compose ps`. Check logs for any startup errors with `docker compose logs`. Ensure all required services (PostgreSQL, GoTrue, PostgREST, Realtime, etc.) are running and accessible.",
+            "status": "pending",
+            "testStrategy": "Verify all containers show 'running (healthy)' status. Test basic connectivity to Supabase Studio interface. Check PostgreSQL database accessibility. Monitor container logs for errors during startup."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Backend Service with Supabase PostgreSQL Database",
+            "description": "Modify the existing Express backend to connect to the deployed Supabase PostgreSQL instance and implement hotel guest data models and database operations.",
+            "dependencies": [
+              "23.3"
+            ],
+            "details": "Update the Express backend to use Supabase PostgreSQL connection parameters from environment variables. Install necessary database drivers (pg for PostgreSQL). Create database connection pool configuration. Design and implement data models for hotel guest management including guest profiles, room assignments, check-in/check-out records, and booking information. Implement CRUD operations for guest data management. Create database migrations and seed data if needed. Ensure proper error handling and connection management.",
+            "status": "pending",
+            "testStrategy": "Test database connectivity from the backend service. Verify CRUD operations work correctly for all guest data models. Test connection pooling and error recovery. Perform integration tests with sample hotel guest data."
+          },
+          {
+            "id": 5,
+            "title": "Implement Authentication Integration and API Security Layer",
+            "description": "Integrate Supabase's GoTrue authentication service with the backend, implement JWT validation, role-based access control, and secure API endpoints for hotel staff and guest access.",
+            "dependencies": [
+              "23.4"
+            ],
+            "details": "Configure the backend to work with Supabase's GoTrue authentication service. Implement JWT token validation middleware for protected routes. Set up role-based access control (RBAC) to differentiate between hotel staff, managers, and guests. Create secure API endpoints for guest data operations with proper authentication checks. Implement session management and token refresh mechanisms. Add input validation and sanitization for all API endpoints. Configure CORS settings appropriately for the frontend integration.",
+            "status": "pending",
+            "testStrategy": "Test authentication flow with different user roles. Verify JWT validation works correctly. Test unauthorized access is properly blocked. Validate input sanitization prevents injection attacks. Test session management and token refresh functionality."
+          }
+        ]
+      },
+      {
+        "id": 24,
+        "title": "Implement Dynamic UI Registry System with AI Directives for Adaptive Hotel Guest Interface Components",
+        "description": "Design and implement a dynamic UI registry system that enables adaptive hotel guest interface components, driven by AI directives and real-time user context.",
+        "details": "Develop a server-driven UI registry that dynamically determines which interface components to render for each hotel guest, based on AI-generated directives and real-time context (e.g., guest preferences, room status, time of day). The system should expose a registry API endpoint (e.g., `/api/ui-registry`) that accepts a guest identifier and context payload, then returns a structured list of UI components (e.g., room controls, service requests, promotions) with their configuration. Integrate this with the existing React-based UI shell (Task 22) to dynamically render components. Use the Supabase PostgreSQL database (Task 23) to store component metadata, guest preferences, and AI directive history. Implement secure, role-based access to the registry endpoint, leveraging the backend’s existing auth system. Ensure the registry is extensible, allowing new component types to be added without code changes. Provide a management interface for administrators to review and override AI-driven component selections. Log all registry decisions for audit and continuous improvement.",
+        "testStrategy": "1. Write unit tests for the registry API, verifying correct component selection based on mock AI directives and guest context. 2. Perform integration tests with the React UI shell, confirming that dynamically registered components render and behave as expected. 3. Test role-based access by attempting registry requests with different user roles, ensuring only authorized users can access or modify the registry. 4. Validate extensibility by registering and rendering a new custom component type via the management interface. 5. Audit log tests to confirm all registry decisions are recorded. 6. Manual testing with real guest scenarios to verify adaptive behavior and user experience.",
+        "status": "pending",
+        "dependencies": [
+          22,
+          23
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Deploy MQTT Broker and Perplexity MCP Search Agent Docker Containers for IoT Integration and Live Data",
+        "description": "Deploy and configure a Mosquitto MQTT broker and a Perplexity MCP search agent as Docker containers on the VPS, enabling real-time IoT data integration and live search capabilities for the hotel platform.",
+        "details": "1. **Environment Preparation**: Ensure Docker and Docker Compose are installed on the VPS. Create a dedicated directory (e.g., `/opt/stacks/mqtt`) for MQTT configuration and data persistence[1].\n2. **Mosquitto MQTT Broker Deployment**: Write a `docker-compose.yaml` file to define the Mosquitto service, mapping necessary ports (1883 for MQTT, 9001 for WebSocket) and volumes for config, data, and logs. Use the official `eclipse-mosquitto` image. Optionally, create a custom `mosquitto.conf` in the config volume for advanced settings[1][3].\n3. **Perplexity MCP Search Agent Deployment**: Define a second service in the same `docker-compose.yaml` for the Perplexity MCP search agent, ensuring it has network access to the Mosquitto broker. Configure environment variables for MQTT connection (broker host, port, credentials) and any required API keys for the search agent.\n4. **Network Configuration**: Ensure both containers are on the same Docker network for secure, low-latency communication. Expose only necessary ports to the host.\n5. **Data Persistence**: Configure volume mounts for both services to ensure data durability across container restarts.\n6. **Integration Testing**: Verify that the MQTT broker is accessible from the Perplexity MCP agent and that the agent can subscribe/publish to relevant MQTT topics. Test end-to-end IoT data flow by simulating device messages and confirming live search results.\n7. **Documentation**: Update project documentation with deployment instructions, example MQTT topics, and agent configuration details.",
+        "testStrategy": "1. **Container Health**: Use `docker compose ps` to confirm both Mosquitto and Perplexity MCP containers are running and healthy.\n2. **MQTT Connectivity**: Use an MQTT client (e.g., `mosquitto_sub`, `mosquitto_pub`) to test publishing and subscribing to topics on the deployed broker.\n3. **Agent Integration**: Verify the Perplexity MCP agent can connect to the MQTT broker, subscribe to IoT data topics, and process incoming messages. Confirm the agent publishes search results or processed data to designated topics.\n4. **End-to-End Flow**: Simulate IoT device messages (e.g., sensor data) and confirm they are received by the agent, processed, and result in appropriate live search responses.\n5. **Persistence Check**: Restart containers and verify that configuration, data, and logs are preserved.\n6. **Security**: Ensure no unnecessary ports are exposed and that communication between containers is isolated from external access where possible.",
+        "status": "pending",
+        "dependencies": [
+          23
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Integrate WebRTC Voice System into LIMI Guest SPA with Contextual AI Prompts",
+        "description": "Integrate the existing WebRTC-based voice communication system into the new LIMI Guest Single Page Application (SPA), ensuring user context and hotel-specific AI prompts are incorporated into the voice session flow.",
+        "details": "1. Refactor the current WebRTC voice system to operate as a modular React component compatible with the LIMI Guest SPA architecture.\n2. On session initiation, retrieve and inject user context (e.g., guest profile, room, preferences) from the SPA's state management layer.\n3. Connect the WebRTC client to the backend using ephemeral tokens, leveraging the established API integration and state management patterns (see Task 7).\n4. Integrate hotel-specific AI prompts by fetching directives from the dynamic UI registry (see Task 24) and passing them to the voice session as contextual metadata.\n5. Ensure the voice interface supports real-time updates to context and prompts, adapting the session dynamically as user or hotel state changes.\n6. Implement robust error handling, loading states, and connection status feedback consistent with SPA standards.\n7. Maintain secure handling of tokens and user data throughout the session lifecycle.\n8. Document integration points and provide usage examples for future extensibility.",
+        "testStrategy": "1. Write unit tests for the voice component to verify correct initialization, context injection, and prompt handling.\n2. Perform integration tests by simulating voice sessions with varying user contexts and hotel AI directives, confirming correct prompt delivery and session adaptation.\n3. Manually test the SPA to ensure seamless voice session initiation, context-aware interactions, and real-time prompt updates.\n4. Validate error handling and connection status feedback under network failure and edge cases.\n5. Conduct cross-browser and device compatibility testing for the voice interface.",
+        "status": "in-progress",
+        "dependencies": [
+          7,
+          24
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Redesign LIMI Guest Interface for AI-Centric, Voice-First Hotel Service Interaction",
+        "description": "Redesign the LIMI Guest interface to make AI-driven voice conversation the primary method for accessing and managing all hotel services, delivering a seamless, personalized, and intuitive guest experience.",
+        "details": "1. Conduct user research and competitive analysis on leading AI-centric and voice-first hospitality interfaces (e.g., Alexa for Hospitality, Virgin Hotels' Lucy app) to identify best practices for conversational UX and accessibility.\n2. Define core user journeys for all major hotel services (room controls, service requests, concierge, entertainment, check-in/out) with voice as the primary interaction channel, ensuring fallback to touch/text where necessary for accessibility.\n3. Collaborate with AI and backend teams to map voice intents and conversational flows to hotel service APIs, leveraging contextual awareness, personalization engines, and service orchestration patterns[1][2][3][4].\n4. Design a modular, React-based conversational UI shell that integrates the WebRTC voice system (from Task 26), supports real-time context updates, and dynamically adapts UI components based on AI directives and guest state (leveraging the dynamic UI registry from Task 24).\n5. Implement natural language understanding (NLU) and context management hooks to maintain conversation history, personalize responses, and handle multi-turn requests (e.g., \"Can I have more towels?\" followed by \"Make it two sets, please.\")[3].\n6. Integrate visual feedback and accessibility features: display live voice transcription, intent recognition, and fallback options for guests with speech or hearing impairments.\n7. Ensure seamless orchestration between voice input, AI-driven decisioning, and hotel service execution, with robust error handling and user guidance for unsupported requests.\n8. Collaborate with branding and design teams to ensure the new interface aligns with LIMI's visual identity and hospitality standards.",
+        "testStrategy": "1. Conduct end-to-end user acceptance testing (UAT) with real hotel service scenarios, verifying that all major guest tasks can be completed via voice alone, with appropriate fallbacks.\n2. Perform accessibility audits to ensure compliance with WCAG standards, including voice transcription, screen reader compatibility, and alternative input methods.\n3. Write integration tests for conversational flows, confirming correct mapping of voice intents to hotel service APIs and dynamic UI updates based on AI directives.\n4. Simulate edge cases (e.g., ambiguous requests, unsupported services, network failures) to verify robust error handling and user guidance.\n5. Gather feedback from pilot users and iterate on conversational UX, personalization, and accessibility features.",
+        "status": "pending",
+        "dependencies": [
+          24,
+          26
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Conduct Comprehensive Code Repository Review",
+        "description": "Perform a thorough review of the code repository to identify current system components, redundant code, and documentation gaps.",
+        "details": "Begin by cloning the latest version of the repository and mapping out all major system components, modules, and their interdependencies. Use tools such as dependency graph generators (e.g., madge) to visualize module relationships and detect circular dependencies. Review each module for redundant or obsolete code, focusing on duplicate logic, unused functions, and legacy files. Assess the quality and completeness of existing documentation, including README files, inline comments, and API docs. Create a checklist based on best practices: security (e.g., credential handling, error exposure), test coverage, performance, reusability, and scalability. Document all findings in a structured report, categorizing issues by severity and providing actionable recommendations for refactoring, removal, or documentation updates. Ensure branch protection and code review policies are in place to maintain repository health going forward.[1][2][3][4]",
+        "testStrategy": "Verify that a complete inventory of system components and their relationships is produced. Confirm that all instances of redundant code are identified and documented, with clear recommendations for removal or refactoring. Review the documentation audit to ensure all major modules and APIs are accounted for, and gaps are clearly listed. Validate that the final report includes actionable recommendations and follows the established code review checklist. Optionally, present findings to the team for feedback and consensus before implementation.",
+        "status": "pending",
+        "dependencies": [
+          15
+        ],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-09-16T20:10:06.792Z",
-      "updated": "2025-09-16T21:53:33.232Z",
+      "updated": "2025-09-17T01:55:26.003Z",
       "description": "Tag created on 9/17/2025"
     }
   }

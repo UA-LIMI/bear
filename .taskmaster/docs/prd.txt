@@ -1,10 +1,12 @@
-# Product Requirements Document (PRD): Limi AI - Real-time Voice Assistant
+# Product Requirements Document (PRD): LIMI AI - Hotel Guest Experience Platform
 
-## 1. Overview
+## 1. Executive Summary
 
-Limi AI is a modern, real-time voice AI application featuring a sophisticated frontend built with Next.js and a secure, production-ready Node.js/Express backend. The core of the application is its ability to establish a direct, real-time voice connection with OpenAI's advanced AI models. The backend serves as a secure gateway, managing API keys and providing short-lived, ephemeral tokens to the frontend, which then communicates directly with the OpenAI Realtime API. This architecture ensures both high performance and robust security, preventing any exposure of sensitive API keys to the client-side.
+LIMI AI is a voice-first hotel guest experience platform that provides intelligent, contextual assistance through adaptive user interfaces. The system dynamically adjusts its functionality and AI personality based on guest status, location, and preferences, delivering personalized service for hotel operations, city exploration, and travel planning.
 
-The project is managed using the `task-master-ai` CLI, a powerful tool for orchestrating the development workflow, from task generation and dependency management to progress tracking.
+**Current Status:** Production-ready voice AI infrastructure with hotel guest experience features in active development.
+
+Built on proven WebRTC voice connection capabilities, the system extends core AI functionality with hotel-specific features, user management, and contextual intelligence that adapts to guest needs.
 
 ## 2. Core Features
 

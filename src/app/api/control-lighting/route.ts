@@ -1,7 +1,7 @@
 // Direct MQTT Lighting Control for Room1
 // This works independently of MCP server
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<Response> {
   try {
     const { room, command, userId } = await request.json();
     
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     // Dynamic import to avoid build issues
     const mqtt = await import('mqtt');
     
-    return new Promise((resolve) => {
+    return new Promise<Response>((resolve) => {
       const client = mqtt.default.connect(process.env.MQTT_BROKER_URL || 'mqtt://mqtt.limilighting.com:1883', {
         username: process.env.MQTT_USERNAME || 'mcp',
         password: process.env.MQTT_PASSWORD || 'mcp'

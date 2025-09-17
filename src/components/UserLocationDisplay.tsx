@@ -3,11 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 interface LocationData {
   current_location_address: string | null;
   current_location_city: string | null;
@@ -34,6 +29,10 @@ export default function UserLocationDisplay({ userId, className = '' }: UserLoca
   const fetchUserLocation = async () => {
     if (!userId) {
       // Try to get current user
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError('Not authenticated');
@@ -45,6 +44,10 @@ export default function UserLocationDisplay({ userId, className = '' }: UserLoca
 
     try {
       setLoading(true);
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('current_location_address, current_location_city, current_location_country, location_updated_at, location_source')

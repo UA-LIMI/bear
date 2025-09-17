@@ -4,11 +4,6 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import UserLocationDisplay from '../../components/UserLocationDisplay';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 interface UserProfile {
   id: string;
   username: string;
@@ -32,6 +27,11 @@ export default function Dashboard() {
 
   const loadUserProfile = async (userId: string) => {
     try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')

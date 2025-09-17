@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { VoiceConnection } from "@/components/VoiceConnection";
 
 export default function Home() {
@@ -15,7 +16,23 @@ export default function Home() {
             priority
             className="object-contain"
           />
-          <p className="text-muted-foreground text-lg text-center">Real-time voice AI assistant</p>
+          <p className="text-muted-foreground text-lg text-center">The Peninsula Hong Kong - Smart Hotel Experience</p>
+        </div>
+
+        {/* Quick Access Buttons */}
+        <div className="flex gap-4 mb-4">
+          <Link 
+            href="/dashboard"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+          >
+            🏨 Hotel Dashboard
+          </Link>
+          <Link 
+            href="/guest"
+            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+          >
+            👤 Guest Interface
+          </Link>
         </div>
 
         {/* Voice Connection Component */}

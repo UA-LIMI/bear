@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  redis-mcp-server:
+    build: .
+    container_name: redis-mcp-server
+    restart: unless-stopped
+    ports:
+      - "8081:8080" # Mapping to 8081 on the host to avoid port conflicts
+    networks:
+      - limi-net
+    environment:
+      - NODE_ENV=production
+      # This MCP server would connect to a Redis instance.
+      # The connection string should be provided via environment variables.
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: "redis:alpine"
+    container_name: redis-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - limi-net
+
+networks:
+  limi-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

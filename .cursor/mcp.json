@@ -14,6 +14,20 @@
 				"AZURE_OPENAI_API_KEY": "YOUR_AZURE_KEY_HERE",
 				"OLLAMA_API_KEY": "YOUR_OLLAMA_API_KEY_HERE"
 			}
+		},
+		"coreflux-mqtt": {
+			"command": "ssh",
+			"args": [
+				"limi-vps", 
+				"docker", "run", "-i", "--rm",
+				"-e", "MQTT_BROKER=mqtt.limilighting.com",
+				"-e", "MQTT_PORT=1883", 
+				"-e", "MQTT_USER=mcp",
+				"-e", "MQTT_PASSWORD=mcp",
+				"-e", "MQTT_USE_TLS=false",
+				"-e", "LOG_LEVEL=DEBUG",
+				"coreflux-mcp-server-coreflux-mcp-server"
+			]
 		}
 	}
 }

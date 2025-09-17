@@ -27,6 +27,8 @@
     "framer-motion": "^12.23.12",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",
+    "mcp-handler": "^1.0.2",
+    "mqtt": "^5.14.1",
     "next": "15.5.3",
     "react": "19.1.0",
     "react-audio-voice-recorder": "^2.2.0",

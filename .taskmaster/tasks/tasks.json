@@ -1672,11 +1672,292 @@
         ],
         "priority": "high",
         "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Deploy Redis MCP Server",
+        "description": "Deploy Redis MCP Server on VPS for real-time session management.",
+        "details": "Containerize and deploy the Redis MCP Server on the VPS. This will be used by the real-time AI to manage guest session state, user preferences, and cache data to improve performance and user experience. The deployment will involve creating a Dockerfile and docker-compose.yml file.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Integrate WLED Control via MQTT MCP Server",
+        "description": "Integrate WLED lighting control for hotel rooms using a dedicated MQTT MCP Server. This involves deploying the server, configuring WLED devices, and enabling control through both the AI voice assistant and a guest-facing web UI.",
+        "details": "The primary goal is to provide guests with seamless control over their in-room lighting. This will be achieved by deploying a Coreflux MQTT MCP Server on the VPS, which will communicate with WLED controllers in each room via the mqtt.limilighting.com broker. The real-time AI will be given a new 'tool' to interact with this MCP server, and a simple UI with preset buttons will be added to the guest web application. Security and room isolation are critical components of this task.",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Deploy Coreflux MQTT MCP Server on VPS Using Docker Compose",
+            "description": "Set up and deploy the Coreflux MQTT MCP Server on the designated VPS using the researched Docker Compose configuration.",
+            "dependencies": [],
+            "details": "Provision the VPS, install Docker and Docker Compose, and use the provided Docker Compose file to deploy the Coreflux MQTT MCP Server. Ensure the service is running and accessible on the intended network interfaces.\n<info added on 2025-09-17T03:50:38.209Z>\nDeployment completed successfully: Coreflux MQTT MCP Server is now operational and connected to mqtt.limilighting.com:1883. FastMCP server is running in SSE mode on port 8000, with external HTTP access verified from 145.79.10.35:8000. Cursor MCP configuration has been updated to use the correct port. Key troubleshooting insights: FastMCP uses a different transport API than research examples, defaults to port 8000 (not 8080), supports SSE transport (HTTP transport is not supported), and required a code modification to use mcp.run(transport=\"sse\").\n</info added on 2025-09-17T03:50:38.209Z>\n<info added on 2025-09-17T04:08:14.123Z>\nSWITCHED TO PROPER SOLUTION!\n\n✅ Replaced problematic Coreflux with official EMQX MCP Server  \n✅ Used proper Docker image: benniuji/emqx-mcp-server  \n✅ Configured with provided EMQX API credentials  \n✅ Server deployed successfully - logs show:\n   - \"EMQX message tools registered\" \n   - \"EMQX client tools registered\"\n   - \"Starting EMQX MCP Server\"\n✅ Updated Cursor config for stdio transport (proper standard)\n\nKey lessons learned:\n- Research first, deploy second  \n- Use well-documented, maintained solutions\n- Follow official Docker deployment patterns\n- Stdio transport is the MCP standard, not HTTP/SSE\n</info added on 2025-09-17T04:08:14.123Z>",
+            "status": "done",
+            "testStrategy": "Verify the MCP server container is running, accessible via its management port, and logs show successful startup."
+          },
+          {
+            "id": 2,
+            "title": "Configure MCP Server for Secure Connection to External MQTT Broker",
+            "description": "Configure the MCP server to securely connect to mqtt.limilighting.com, including certificate management and secure authentication.",
+            "dependencies": [
+              "30.1"
+            ],
+            "details": "Update the MCP server configuration to point to mqtt.limilighting.com as the broker. Implement TLS/SSL certificate management, import CA certificates, and configure authentication credentials as required by the broker.",
+            "status": "done",
+            "testStrategy": "Attempt a secure connection from the MCP server to the broker and verify successful authentication and encrypted communication in logs."
+          },
+          {
+            "id": 3,
+            "title": "Configure WLED Devices with Unique MQTT Topics for Room Isolation",
+            "description": "Set up each WLED device in every hotel room to connect to the broker with unique, room-specific MQTT topics to ensure secure and isolated control.",
+            "dependencies": [
+              "30.2"
+            ],
+            "details": "Access each WLED device’s web interface, enable MQTT, and assign a unique topic per room (e.g., wled/room/101). Document topic structure and ensure devices are isolated from each other.",
+            "status": "done",
+            "testStrategy": "Publish test messages to each room’s topic and confirm only the corresponding WLED device responds."
+          },
+          {
+            "id": 4,
+            "title": "Integrate MCP Server as a Tool in Real-Time AI Service",
+            "description": "Register and expose the MCP server as a new tool within the real-time AI service, enabling tool discovery and command routing.",
+            "dependencies": [
+              "30.3"
+            ],
+            "details": "Extend the AI service’s tool registry to include the MCP server, implement tool discovery, and ensure the AI can send lighting control commands via the MCP API.\n<info added on 2025-09-17T05:05:53.813Z>\nIntegration with the MQTT MCP Server is fully operational. The AI agents can now reliably control WLED lights using the publish_mqtt_message tool, supporting ON/OFF commands and multiple effects (fx:63, 95, 110, 125). A comprehensive WLED_COMPLETE_API_REFERENCE.md has been created to document all available commands and integration details. The end-to-end control chain—AI → MCP → MQTT → WLED—has been validated in production. This subtask is now ready for the next phase: enabling real-time AI voice control of room lighting.\n</info added on 2025-09-17T05:05:53.813Z>",
+            "status": "done",
+            "testStrategy": "Issue test lighting commands via the AI service and confirm they are routed to the MCP server and published to the correct MQTT topics."
+          },
+          {
+            "id": 5,
+            "title": "Develop Guest Web UI Component with 5 Preset Lighting Buttons",
+            "description": "Create a simple frontend UI component for the guest web app, featuring 5 preset lighting control buttons.",
+            "dependencies": [
+              "30.4"
+            ],
+            "details": "Design and implement a React (or relevant framework) component with 5 clearly labeled buttons for common lighting presets. Integrate with the app’s authentication and room context.",
+            "status": "done",
+            "testStrategy": "Render the component in the guest app, verify button visibility and correct labeling, and check accessibility compliance."
+          },
+          {
+            "id": 6,
+            "title": "Implement Backend Logic for Authenticated Lighting Control via UI",
+            "description": "Build backend endpoints to handle UI button presses, authenticate the guest, and publish the correct MQTT command for their room.",
+            "dependencies": [
+              "30.5"
+            ],
+            "details": "Implement secure API endpoints that receive button press events, validate guest authentication and room assignment, and publish the corresponding MQTT message to the room’s topic.",
+            "status": "done",
+            "testStrategy": "Simulate button presses as an authenticated guest and verify correct MQTT messages are published to the appropriate room topic."
+          },
+          {
+            "id": 7,
+            "title": "Conduct End-to-End Testing of Voice and UI Lighting Control Workflow",
+            "description": "Test the complete workflow from both AI voice commands and UI button presses through to WLED device response in the room.",
+            "dependencies": [
+              "30.6"
+            ],
+            "details": "Perform comprehensive tests covering voice command execution, UI interactions, backend processing, MQTT message delivery, and WLED device response. Validate security, room isolation, and guest experience.\n<info added on 2025-09-17T05:33:34.358Z>\nEND-TO-END TESTING SUCCESSFUL!\n\nAI voice commands are reliably processed through the MCP server, delivered via MQTT, and correctly executed by WLED devices in guest rooms. The confirmed working format is Topic \"room1/api\" with Message \"FX=X\" (legacy API). Successfully tested effects include Rainbow (FX=9), Pride 2015 (FX=63), Fire Flicker (FX=45), and Breathe (FX=2). Power control via \"ON\"/\"OFF\" messages to the \"room1\" topic is fully operational. All lighting controls are now available to hotel guests, and the core technical integration is complete.\n</info added on 2025-09-17T05:33:34.358Z>",
+            "status": "done",
+            "testStrategy": "Run test cases for both control methods in multiple rooms, confirm lights respond as expected, and verify no cross-room control or security breaches."
+          }
+        ]
+      },
+      {
+        "id": 31,
+        "title": "Integrate WLED Lighting Control into OpenAI Realtime Voice Agent",
+        "description": "Enable guests to control in-room WLED lighting via natural voice commands processed by the OpenAI realtime voice agent, using the official realtime-next agent patterns.",
+        "details": "1. Study the official OpenAI agents realtime-next example and documentation to understand the recommended architecture for tool integration and real-time voice command handling.\n2. Design and implement a new 'tool' or function within the OpenAI RealtimeAgent that can interpret lighting-related intents (e.g., 'turn on the lights', 'set lights to blue', 'dim the lights') and map them to WLED control actions.\n3. Integrate this tool with the existing WLED control layer, ensuring it communicates with the MQTT MCP Server as established in Task 30. Use secure, room-isolated messaging to prevent cross-room control.\n4. Update the agent's system prompt and instructions to include examples of lighting control, ensuring the AI understands and prioritizes these commands appropriately.\n5. Ensure the voice agent can handle real-time feedback, confirmations, and error handling (e.g., 'The lights are now blue', 'Sorry, I couldn't reach the lighting system').\n6. Follow the audio and session management patterns from the official OpenAI agents SDK, ensuring seamless voice interaction and minimal latency.\n7. Document the integration approach, including code samples and configuration for future maintainability.",
+        "testStrategy": "- Write unit tests for the new WLED control tool, verifying correct intent recognition and command mapping for a variety of lighting-related voice inputs.\n- Perform integration tests by simulating voice sessions where guests issue lighting commands, confirming that the correct MQTT messages are sent and WLED devices respond as expected.\n- Manually test in a staging environment with real WLED hardware, verifying room isolation, real-time feedback, and error handling.\n- Review logs to ensure all voice-to-lighting actions are auditable and that no unauthorized cross-room control is possible.\n- Conduct regression testing to ensure existing voice agent functionality is unaffected.",
+        "status": "done",
+        "dependencies": [
+          26,
+          30
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 32,
+        "title": "Integrate MQTT Lighting Control with OpenAI Realtime Voice Agent",
+        "description": "Study the OpenAI Agents JS realtime-next example and integrate our working MQTT lighting control as a tool in the real-time voice agent, enabling guests to control room lighting via voice commands.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze the OpenAI Agents JS realtime-next Example Architecture",
+            "description": "Study the realtime-next example and documentation to understand agent orchestration, tool integration, and real-time voice command handling patterns.",
+            "dependencies": [],
+            "details": "Review the OpenAI Agents SDK documentation, example code, and architectural diagrams to identify how tools are defined, registered, and invoked within the realtime-next agent framework.",
+            "status": "pending",
+            "testStrategy": "Document key architectural patterns and summarize how tool calls are handled in the example."
+          },
+          {
+            "id": 2,
+            "title": "Fix MCP Server SSH Connection Issue for Production",
+            "description": "Resolve the SSH connection problem by configuring the system to use a direct connection to the MCP server for MQTT commands, eliminating SSH tunneling.",
+            "dependencies": [
+              "32.1"
+            ],
+            "details": "Update backend connection logic to communicate directly with the MCP server using its production endpoint, ensuring secure and reliable MQTT messaging.",
+            "status": "pending",
+            "testStrategy": "Verify direct connectivity to the MCP server from the backend and confirm successful MQTT command transmission."
+          },
+          {
+            "id": 3,
+            "title": "Define MQTT Lighting Control Tool Using Realtime-Next Patterns",
+            "description": "Create a new tool definition for MQTT lighting control, following the tool schema and execution patterns demonstrated in the realtime-next example.",
+            "dependencies": [
+              "32.1",
+              "32.2"
+            ],
+            "details": "Implement a tool object with appropriate parameters (e.g., room, action, color) and an execute function that sends MQTT commands to the MCP server.",
+            "status": "pending",
+            "testStrategy": "Unit test the tool definition to ensure correct parameter validation and MQTT command formatting."
+          },
+          {
+            "id": 4,
+            "title": "Integrate MQTT Lighting Tool with Voice Agent Backend",
+            "description": "Register the MQTT lighting control tool with the realtime voice agent backend, enabling the agent to invoke it in response to user voice commands.",
+            "dependencies": [
+              "32.3"
+            ],
+            "details": "Update the agent configuration to include the new tool, ensuring it is accessible for tool calls during real-time sessions.",
+            "status": "pending",
+            "testStrategy": "Simulate backend tool calls and verify that MQTT commands are dispatched as expected."
+          },
+          {
+            "id": 5,
+            "title": "Update Agent Instructions to Include Lighting Control Capabilities",
+            "description": "Modify the agent's instructions and prompt templates to inform the model about the new lighting control tool and its usage.",
+            "dependencies": [
+              "32.4"
+            ],
+            "details": "Clearly describe the tool's purpose, parameters, and example usage in the agent's instruction set to improve intent recognition and tool invocation.",
+            "status": "pending",
+            "testStrategy": "Review agent prompt outputs to confirm that lighting control options are suggested and invoked appropriately."
+          },
+          {
+            "id": 6,
+            "title": "Test Voice Commands for Lighting Control Functionality",
+            "description": "Conduct end-to-end tests of the voice agent, issuing natural language lighting commands and verifying correct MQTT actions in the room.",
+            "dependencies": [
+              "32.5"
+            ],
+            "details": "Test a variety of voice commands (e.g., 'turn on the lights', 'set lights to blue') and confirm that the correct MQTT messages are sent and lighting responds as expected.",
+            "status": "pending",
+            "testStrategy": "Perform manual and automated tests, logging both voice agent responses and MQTT command outcomes."
+          },
+          {
+            "id": 7,
+            "title": "Implement Error Handling and Guest Authentication for Lighting Control",
+            "description": "Add robust error handling for MQTT failures and enforce guest authentication and room isolation when processing lighting commands.",
+            "dependencies": [
+              "32.6"
+            ],
+            "details": "Ensure that only authenticated guests can control their assigned room's lighting, and that errors (e.g., MQTT timeouts) are gracefully reported to the user.",
+            "status": "pending",
+            "testStrategy": "Simulate authentication failures and MQTT errors, verifying that the system responds securely and informatively."
+          },
+          {
+            "id": 8,
+            "title": "Deploy and Validate the Complete Voice + Lighting System",
+            "description": "Deploy the integrated system to the production environment and perform comprehensive validation of real-time voice-controlled lighting for guest rooms.",
+            "dependencies": [
+              "32.7"
+            ],
+            "details": "Monitor system performance, collect guest feedback, and ensure all components (voice agent, MQTT tool, MCP server) operate reliably in production.",
+            "status": "pending",
+            "testStrategy": "Run acceptance tests covering all user scenarios and monitor logs for errors or unexpected behavior post-deployment."
+          }
+        ]
+      },
+      {
+        "id": 33,
+        "title": "Research and Architect Perplexity MCP Server Integration for OpenAI Real-time API Agents",
+        "description": "Conduct comprehensive research and provide actionable implementation guidance for integrating a Perplexity MCP server with OpenAI real-time API agents, enabling advanced real-time search capabilities such as location-based queries and nearby business discovery.",
+        "details": "1. **MCP Server Setup**: Review official documentation and repositories for Perplexity MCP server implementations. Install Node.js and required dependencies, clone the MCP server repository, and configure the PERPLEXITY_API_KEY environment variable for secure API access[2][3][4][5].\n\n2. **Integration Patterns**: Analyze OpenAI agent tool integration patterns, focusing on how MCP servers expose tools (e.g., perplexity_search) compatible with OpenAI's tool format. Document how to register MCP server tools with OpenAI agents using SDKs or direct API calls[1][2][3].\n\n3. **Deployment & Connection Management**: Detail Docker containerization steps for MCP server deployment, including Dockerfile and docker-compose.yml creation. Outline best practices for VPS hosting, remote server configuration, and connection health monitoring[2][3][4].\n\n4. **API Key Management & Security**: Specify secure storage and rotation of API keys using environment variables and secrets management tools. Recommend audit logging for API key usage and access control policies[4][5].\n\n5. **Real-time Query Patterns & Response Handling**: Document how to structure real-time search queries for location-based and business discovery use cases. Provide examples of request/response formats and strategies for parsing and presenting results to users[1][2][4].\n\n6. **Error Handling & Fallbacks**: Research robust error handling mechanisms for MCP server and OpenAI agent interactions, including retries, fallback to cached results, and user feedback for degraded service[3][4].\n\n7. **Performance Optimization**: Explore techniques for optimizing real-time voice interactions, such as connection pooling, caching, and minimizing latency in API calls[1][4].\n\n8. **Testing & Validation**: Recommend using MCP Inspector and integration test suites to validate server functionality and protocol compliance[2][4].\n\nInclude code samples, configuration templates, and references to official guides where appropriate. Summarize actionable steps for replacing OpenAI's default real-time search with Perplexity-powered MCP integration.",
+        "testStrategy": "1. Deploy a Perplexity MCP server in a Docker container on a VPS and verify startup and API key configuration.\n2. Register MCP server tools with OpenAI real-time agents and confirm tool discovery and invocation via test queries.\n3. Simulate real-time location-based and business discovery searches, validating response accuracy and latency.\n4. Test error handling by simulating API failures and verifying fallback mechanisms.\n5. Audit API key usage and access logs for security compliance.\n6. Use MCP Inspector and integration tests to ensure protocol adherence and robust connection management.",
+        "status": "pending",
+        "dependencies": [
+          11,
+          29
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "MCP Server Environment Setup and Configuration",
+            "description": "Set up the development environment for Perplexity MCP server integration, including Node.js installation, repository cloning, dependency management, and API key configuration.",
+            "dependencies": [],
+            "details": "Install Node.js and npm on the target system. Clone the official Perplexity MCP server repository from GitHub. Run npm install to install all required dependencies including @modelcontextprotocol/sdk and axios. Configure the PERPLEXITY_API_KEY environment variable securely using .env files or system environment variables. Verify server startup with npm start and test basic connectivity to Perplexity API endpoints.",
+            "status": "pending",
+            "testStrategy": "Verify Node.js and npm versions meet requirements. Test repository cloning and dependency installation without errors. Validate API key configuration by starting the MCP server and confirming successful connection to Perplexity API. Test environment variable loading and secure storage practices."
+          },
+          {
+            "id": 2,
+            "title": "OpenAI Agent Tool Integration Pattern Analysis",
+            "description": "Research and document how MCP servers expose tools in OpenAI-compatible formats, focusing on tool registration, discovery, and invocation patterns for real-time agents.",
+            "dependencies": [
+              "33.1"
+            ],
+            "details": "Analyze the Klavis AI SDK integration patterns for connecting OpenAI to MCP servers using ConnectionType.STREAMABLE_HTTP. Document how perplexity_search and other tools are formatted using ToolFormat.OPENAI. Create code templates for tool registration with OpenAI chat completions API. Research RealtimeAgent and RealtimeSession integration patterns for real-time voice interactions. Document the tool calling workflow from OpenAI agents to MCP server endpoints.",
+            "status": "pending",
+            "testStrategy": "Create test scenarios for tool discovery and registration with OpenAI agents. Validate tool format compatibility by testing sample tool calls. Verify real-time agent integration by simulating voice-triggered search queries. Test error handling for tool invocation failures."
+          },
+          {
+            "id": 3,
+            "title": "Docker Containerization and VPS Deployment Architecture",
+            "description": "Design and implement containerized deployment strategy for the Perplexity MCP server, including Docker configuration, VPS hosting setup, and connection management.",
+            "dependencies": [
+              "33.1",
+              "33.2"
+            ],
+            "details": "Create Dockerfile for the Perplexity MCP server with Node.js runtime, dependency installation, and secure environment variable handling. Design docker-compose.yml for multi-service deployment including the MCP server, reverse proxy, and monitoring services. Document VPS hosting requirements, network configuration, and firewall rules for remote MCP server access. Implement health check endpoints and connection monitoring for the deployed MCP server. Configure SSL/TLS termination and secure communication channels.",
+            "status": "pending",
+            "testStrategy": "Test Docker image building and container startup locally. Deploy to VPS and verify remote accessibility and API functionality. Test connection health monitoring and automatic restart capabilities. Validate SSL/TLS configuration and secure communication protocols."
+          },
+          {
+            "id": 4,
+            "title": "Security Implementation and API Key Management",
+            "description": "Implement comprehensive security measures for API key management, access control, and audit logging for the Perplexity MCP server integration.",
+            "dependencies": [
+              "33.3"
+            ],
+            "details": "Design secure API key storage using environment variables, Docker secrets, or dedicated secrets management services like HashiCorp Vault. Implement API key rotation mechanisms with zero-downtime updates. Create audit logging system for all API key usage, MCP server access, and tool invocations. Establish access control policies for different user roles and rate limiting for API calls. Document security best practices for production deployment including network isolation and monitoring.",
+            "status": "pending",
+            "testStrategy": "Test API key rotation without service interruption. Validate audit logging captures all security-relevant events. Verify access control policies prevent unauthorized access. Test rate limiting and abuse prevention mechanisms. Conduct security review of deployed configuration."
+          },
+          {
+            "id": 5,
+            "title": "Real-time Query Optimization and Error Handling",
+            "description": "Develop optimized query patterns for location-based searches and implement robust error handling with fallback mechanisms for real-time voice interactions.",
+            "dependencies": [
+              "33.2",
+              "33.4"
+            ],
+            "details": "Design query templates for location-based searches, nearby business discovery, and real-time information retrieval optimized for voice interactions. Implement connection pooling and caching strategies to minimize latency in API calls. Create comprehensive error handling for MCP server failures, API timeouts, and network issues. Develop fallback mechanisms including cached results and graceful degradation. Optimize response parsing and formatting for real-time voice presentation. Implement retry logic with exponential backoff for transient failures.",
+            "status": "pending",
+            "testStrategy": "Test query performance under various network conditions and API load scenarios. Validate error handling by simulating API failures and network timeouts. Test fallback mechanisms ensure continuous service availability. Measure and optimize response times for real-time voice interactions. Verify retry logic prevents cascading failures."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-09-16T20:10:06.792Z",
-      "updated": "2025-09-17T01:55:26.003Z",
+      "updated": "2025-09-17T06:59:31.913Z",
       "description": "Tag created on 9/17/2025"
     }
   }

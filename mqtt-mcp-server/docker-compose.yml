@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  coreflux-mqtt-mcp:
+    # NOTE: Assuming 'coreflux/mqtt-mcp-server:latest' is the correct image name from research.
+    image: coreflux/mqtt-mcp-server:latest
+    container_name: coreflux-mqtt-mcp-server
+    restart: unless-stopped
+    ports:
+      # Exposing MCP on port 8080 of the host, which is the standard.
+      - "8080:8080"
+    environment:
+      # Setting the server to run in production mode.
+      - NODE_ENV=production
+      # Broker connection details. Using 'mqtts' for a secure connection if available, assuming standard secure port 8883. Let's try 8084 as you suggested if this fails.
+      - MQTT_BROKER_URL=mqtt://mqtt.limilighting.com:8084
+      # Credentials for the MQTT broker.
+      - MQTT_USERNAME=mcp
+      - MQTT_PASSWORD=mcp
+      # A unique client ID for this MCP server instance.
+      - MQTT_CLIENT_ID=limi-ai-mcp-server-01
+      # The port the MCP server will listen on inside the container.
+      - MCP_SERVER_PORT=8080
+      - LOG_LEVEL=info
+    networks:
+      - mcp-net
+
+networks:
+  mcp-net:
+    driver: bridge

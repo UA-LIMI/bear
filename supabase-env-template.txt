@@ -1,0 +1,14 @@
+# SUPABASE CONFIGURATION (Required for MCP Server)
+# Get these from your Supabase emerald-queen project → Settings → API
+
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# MQTT CONFIGURATION (For hotel lighting)
+MQTT_BROKER_URL=mqtt://mqtt.limilighting.com:1883
+MQTT_USERNAME=mcp
+MQTT_PASSWORD=mcp
+
+# Add these to your .env.local file to test locally
+# Add these to Vercel Environment Variables for production

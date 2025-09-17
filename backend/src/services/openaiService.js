@@ -12,7 +12,7 @@
  */
 
 const axios = require('axios');
-const { config } = require('../config');
+const { getConfig } = require('../config');
 const { logger } = require('../middleware/logger');
 
 /**
@@ -173,7 +173,7 @@ class OpenAIRealtimeService {
         },
         {
           headers: {
-            'Authorization': `Bearer ${config.openaiApiKey}`,
+            'Authorization': `Bearer ${getConfig().openaiApiKey}`,
             'Content-Type': 'application/json',
             'User-Agent': 'Limi-AI-Backend/1.0.0',
             'OpenAI-Beta': 'realtime=v1' // Required header for realtime API
@@ -295,7 +295,7 @@ class OpenAIRealtimeService {
     try {
       const response = await axios.get('https://api.openai.com/v1/models', {
         headers: {
-          'Authorization': `Bearer ${config.openaiApiKey}`,
+          'Authorization': `Bearer ${getConfig().openaiApiKey}`,
           'User-Agent': 'Limi-AI-Backend/1.0.0'
         },
         timeout: 5000

@@ -1,0 +1,20 @@
+srv1000332.hstgr.cloud {
+    reverse_proxy homeassistant:8123
+}
+
+mcp.limilighting.com {
+    reverse_proxy coreflux-mcp-server:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
+# Alternative: If you want to use a path instead of subdomain
+# Uncomment this and comment out the subdomain above:
+#
+# srv1000332.hstgr.cloud {
+#     reverse_proxy /mcp/* coreflux-mcp-server:8000
+#     reverse_proxy homeassistant:8123
+# }

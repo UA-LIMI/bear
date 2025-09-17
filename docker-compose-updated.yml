@@ -1,0 +1,57 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    privileged: true
+    environment:
+      - TZ=UTC  # Change to your timezone
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    volumes:
+      - /root/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - homeassistant
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /root/caddy/conf:/etc/caddy
+      - /root/site:/srv
+      - /root/caddy/data:/data
+      - /root/caddy/config:/config
+    depends_on:
+      - homeassistant
+      - coreflux-mcp-server
+    networks:
+      - homeassistant
+
+  coreflux-mcp-server:
+    image: coreflux-mcp-server-coreflux-mcp-server:latest
+    container_name: coreflux-mcp-server
+    restart: unless-stopped
+    environment:
+      - MQTT_BROKER=mqtt.limilighting.com
+      - MQTT_PORT=1883
+      - MQTT_USER=mcp
+      - MQTT_PASSWORD=mcp
+      - MQTT_USE_TLS=false
+      - MQTT_CLIENT_ID=coreflux-mcp-limi-ai
+      - LOG_LEVEL=DEBUG
+      - FASTMCP_SERVER_TRANSPORT=sse
+      - FASTMCP_SERVER_PORT=8000
+      - FASTMCP_SERVER_HOST=0.0.0.0
+    volumes:
+      - /opt/coreflux-mcp-server/logs:/app/logs:rw
+      - /opt/coreflux-mcp-server/certs:/app/certs:ro
+    networks:
+      - homeassistant
+
+networks:
+  homeassistant:

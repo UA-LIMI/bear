@@ -143,70 +143,6 @@ export default function GuestInterface() {
     { time: '8:00 PM', event: 'Rooftop Pool Open' }
   ];
 
-  // Build dynamic AI instructions from database
-  const buildAIInstructions = async (guest: GuestProfile) => {
-    try {
-      // Get room-specific context from database
-      const response = await fetch('/api/get-room-context', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomNumber: guest.stayInfo?.room,
-          userId: guest.id
-        })
-      });
-      
-      const context = await response.json();
-      
-      if (!context.success) {
-        throw new Error(context.error);
-      }
-      
-      // Build comprehensive instructions from database
-      const instructions = `
-${context.hotel.ai_identity}
-
-CORE BEHAVIOR:
-${context.hotel.ai_behavior_rules.join('\n')}
-
-VOICE INTERACTION RULES:
-- Use natural, conversational language with short sentences
-- Avoid listing more than 3 items at once  
-- Offer to repeat if guest sounds confused
-- Handle interruptions gracefully by stopping immediately
-
-CURRENT GUEST: ${guest.name}, ${guest.profile.occupation}
-MEMBERSHIP: ${guest.membershipTier} (Acknowledge status but do not explain tiers)
-ROOM: ${guest.stayInfo?.room} at ${context.hotel.hotel_name}
-CURRENT LOCATION: ${guest.stayInfo?.location}
-
-ROOM ${guest.stayInfo?.room} DEVICE CAPABILITIES:
-${context.devices.map((device: Record<string, unknown>) => 
-  (device.device_functions as Record<string, unknown>[]).map((func: Record<string, unknown>) => 
-    `- ${func.function_name}: Use payload "${func.payload_value}" - ${func.description} (${func.rating}⭐ ${func.category})`
-  ).join('\n')
-).join('\n')}
-
-AVAILABLE TOOLS:
-- control_hotel_lighting: Send MQTT commands to room devices using payloads above
-- update_user_location: Update guest location when they move
-- remember_guest_preference: Store any preferences mentioned
-- get_guest_context: Retrieve stored guest preferences
-
-${guest.profile.aiPrompt}
-
-Current Status: ${guest.status === 'inRoom' ? 'Guest is in their room - full hotel services available' : 'Guest preparing for arrival - assist with planning'}
-      `.trim();
-      
-      return instructions;
-      
-    } catch (error) {
-      console.error('Error building AI instructions:', error);
-      // Fallback to basic instructions
-      return `You are LIMI, an AI for ${guest.stayInfo?.hotel}. Assist ${guest.name}, a ${guest.profile.occupation} with ${guest.membershipTier} status in Room ${guest.stayInfo?.room}. ${guest.profile.aiPrompt}`;
-    }
-  };
-
   // Real AI Integration Functions
   const connectVoice = async () => {
     setIsProcessing(true);
@@ -214,8 +150,8 @@ Current Status: ${guest.status === 'inRoom' ? 'Guest is in their room - full hot
     try {
       console.log('🔗 Connecting to LIMI AI voice system...');
       
-      // Build dynamic instructions from database
-      const dynamicInstructions = await buildAIInstructions(selectedGuest!);
+      // Enhanced AI instructions - keeping simple format that works
+      const enhancedInstructions = `You are LIMI, an AI concierge for The Peninsula Hong Kong assisting ${selectedGuest?.name}, a ${selectedGuest?.profile.occupation} with ${selectedGuest?.membershipTier} status in Room ${selectedGuest?.stayInfo?.room}. Current location: ${selectedGuest?.stayInfo?.location}. Always greet by name and room number, confirm before room changes, speak clearly in short sentences, handle interruptions gracefully. Available tools: control_hotel_lighting for room devices, update_user_location for location changes, remember_guest_preference for storing preferences. ${selectedGuest?.profile.aiPrompt}. Help with ${selectedGuest?.status === 'inRoom' ? 'room controls, hotel services' : selectedGuest?.status === 'bookedOffsite' ? 'arrival preparation, reservations' : 'city exploration, hotel booking'}.`;
       
       // Get ephemeral key from our backend
       const response = await fetch('/api/client-secret', {
@@ -225,7 +161,7 @@ Current Status: ${guest.status === 'inRoom' ? 'Guest is in their room - full hot
           sessionId: `guest_${selectedGuest?.id}_${Date.now()}`,
           model: 'gpt-4o-realtime-preview',
           voice: 'alloy',
-          instructions: dynamicInstructions
+          instructions: enhancedInstructions
         })
       });
 
@@ -238,7 +174,7 @@ Current Status: ${guest.status === 'inRoom' ? 'Guest is in their room - full hot
       // Create OpenAI Realtime session
       const agent = new RealtimeAgent({
         name: 'LIMI AI Assistant',
-        instructions: dynamicInstructions
+        instructions: enhancedInstructions
       });
 
       const voiceSession = new RealtimeSession(agent);

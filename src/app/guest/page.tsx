@@ -78,14 +78,11 @@ export default function GuestInterface() {
     loadUIConfiguration();
   }, []);
 
-  // Load UI configuration from database
-  const loadUIConfiguration = async () => {
+  // Load user-specific UI configuration from database
+  const loadUIConfiguration = async (guestId?: string, guestType?: string) => {
     try {
-      const response = await fetch('/api/get-guests'); // Reusing existing endpoint
-      const result = await response.json();
-      
-      if (result.success) {
-        // Set default UI text content (will be replaced with database content)
+      if (!guestId || !guestType) {
+        // Set default configuration if no guest selected
         setUiTextContent({
           voice_connected: 'Voice Connected to LIMI AI',
           voice_disconnected: 'Voice Disconnected', 
@@ -98,7 +95,6 @@ export default function GuestInterface() {
           processing_message: 'LIMI AI is thinking...'
         });
         
-        // Set default component configuration
         setUiComponents([
           { name: 'weather_card', priority: 8, visible: true, position: 'right' },
           { name: 'hotel_events', priority: 7, visible: true, position: 'right' },
@@ -108,6 +104,36 @@ export default function GuestInterface() {
           { name: 'location_info', priority: 7, visible: true, position: 'right' },
           { name: 'quick_services', priority: 8, visible: true, position: 'right' }
         ]);
+        return;
+      }
+
+      // Load user-specific configuration from database
+      const response = await fetch('/api/get-ui-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: guestId,
+          guestType: guestType,
+          screenSize: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Set database-driven text content
+        setUiTextContent(result.textContent);
+        
+        // Set user-specific component configuration
+        setUiComponents(result.components);
+        
+        // Set layout configuration
+        setLayoutConfiguration(result.layoutConfig);
+        
+        console.log(`✅ Loaded UI config for ${guestType} guest:`, result.components.length, 'components');
+      } else {
+        console.error('Failed to load UI config:', result.error);
+        // Keep default configuration
       }
     } catch (error) {
       console.error('UI configuration loading failed:', error);
@@ -695,6 +721,8 @@ CONVERSATION MEMORY AND CONTEXT BUILDING:
             if (guest) {
               setSelectedGuest(guest);
               setShowUserDropdown(false);
+              // Load user-specific UI configuration
+              loadUIConfiguration(guest.id, guest.guestType);
             }
           }}
           className="w-full p-4 rounded-xl bg-white/10 text-[#f3ebe2] border border-white/20"

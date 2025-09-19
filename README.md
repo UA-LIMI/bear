@@ -18,6 +18,13 @@ LIMI AI is a **voice-first hotel guest experience platform** that adapts dynamic
 - **`/guest`** - Hotel guest experience dashboard ⭐ **NEW**
 - **`/mobile`** - Mobile-optimized interface
 
+### **Key Libraries & SDKs**
+- **`openai`**: The official Node.js library for interacting with all OpenAI APIs, including the Assistants API for building stateful, tool-calling agents.
+- **`ai`**: The Vercel AI SDK for streamlined integration with various AI models and building chat interfaces with Generative UI.
+- **`ai-elements`**: A collection of pre-built, production-ready Generative UI components that work with the Vercel AI SDK.
+- **`@openai/agents-realtime`**: Used in the guest portal for live, low-latency voice sessions.
+- **`ucaf`**: The Universal AI Chat Framework for building domain-agnostic, enterprise-grade chatbot experiences with Generative UI and MCP integration.
+
 ### **Deployment:**
 ```
 ┌─────────────────┐    HTTPS     ┌──────────────────┐    HTTP      ┌─────────────────┐
@@ -148,7 +155,6 @@ task-master next
 # Update task progress
 task-master update-subtask --id=<id> --prompt="progress notes"
 ```
-
 ## 📊 **Current Status**
 
 ### **✅ Production Ready:**

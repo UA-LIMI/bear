@@ -1953,11 +1953,61 @@
             "testStrategy": "Test query performance under various network conditions and API load scenarios. Validate error handling by simulating API failures and network timeouts. Test fallback mechanisms ensure continuous service availability. Measure and optimize response times for real-time voice interactions. Verify retry logic prevents cascading failures."
           }
         ]
+      },
+      {
+        "id": 34,
+        "title": "Create Secure Chat API Route",
+        "description": "Implement a new backend API route at `/api/chat/route.ts` to securely handle all communications with the Vercel AI Gateway. This route will receive chat messages from the frontend, add the secret API key, and forward the request to the AI model. This is the first step in fixing the security vulnerability in the guest portal.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 35,
+        "title": "Build Vercel AI SDK Chat Component",
+        "description": "Create a new, modern, client-side chat component using the `useChat` hook from the Vercel AI SDK. This component will manage the chat state and user interface, replacing the old manual `fetch` implementation.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          34
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 36,
+        "title": "Integrate New Chat Component into Guest Portal",
+        "description": "Replace the existing chat UI in `src/app/guest/page.tsx` with the new Vercel AI SDK-based chat component. This involves removing the old message display and input form and embedding the new component in their place.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          35
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 37,
+        "title": "Remove Old Chat Logic and State",
+        "description": "Delete the now-redundant state variables (`messages`, `inputText`, `isProcessing`) and the old `sendMessage` function from `src/app/guest/page.tsx`. This will complete the refactoring and clean up the component.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          36
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-09-16T20:10:06.792Z",
-      "updated": "2025-09-17T06:59:31.913Z",
+      "updated": "2025-09-19T09:10:12.849Z",
       "description": "Tag created on 9/17/2025"
     }
   }

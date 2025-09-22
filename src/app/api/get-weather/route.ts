@@ -25,10 +25,21 @@ export async function GET(request: Request) {
     );
     
     if (!weatherResponse.ok) {
-      throw new Error(`Google Weather API error: ${weatherResponse.status}`);
+      const errorText = await weatherResponse.text();
+      console.error('Google Weather API error:', weatherResponse.status, errorText);
+      throw new Error(`Google Weather API error: ${weatherResponse.status} - ${errorText}`);
     }
     
-    const weatherData = await weatherResponse.json();
+    const responseText = await weatherResponse.text();
+    console.log('Google Weather API response:', responseText);
+    
+    let weatherData;
+    try {
+      weatherData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse weather response:', parseError, 'Response:', responseText);
+      throw new Error(`Invalid JSON response from Google Weather API: ${responseText.slice(0, 100)}`);
+    }
     
     return Response.json({
       success: true,

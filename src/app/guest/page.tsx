@@ -11,6 +11,7 @@ import { GuestLayout } from '@/components/guest/GuestLayout';
 import { RoomControls } from '@/components/guest/RoomControls';
 import { GuestInfoPanel } from '@/components/guest/GuestInfoPanel';
 import { ChatInterface } from '@/components/ChatInterface';
+import { VoiceInterface } from '@/components/VoiceInterface';
 
 interface GuestProfile {
   id: string;
@@ -301,12 +302,12 @@ export default function GuestInterface() {
         />
       }
       bottomPanel={
-        <div className="p-4 border-t border-white/10 bg-black/20">
-          <div className="text-center text-[#f3ebe2]/60 text-xs">
-            LIMI AI x Hotels • Powered by {weather.isLive ? 'Live Google Weather' : 'Fallback Data'} • 
-            Layout optimized for {selectedGuest.guestType} guests
-          </div>
-        </div>
+        <VoiceInterface
+          selectedGuest={selectedGuest}
+          weather={weather}
+          uiTextContent={uiTextContent}
+          onAddMessage={handleAddMessage}
+        />
       }
     >
       {/* Main chat interface */}

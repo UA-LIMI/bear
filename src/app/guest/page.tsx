@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 // Import all working modules
-import { WeatherCard } from '@/components/WeatherCard';
+import { WeatherModule } from '@/components/WeatherModule';
 import { AIModule } from '@/components/AIModule';
 import { RoomControlsComplete } from '@/components/guest/RoomControlsComplete';
 
@@ -638,12 +638,10 @@ export default function CompleteGuestInterface() {
               className={layout.rightSpan}
             >
               <div className="space-y-6">
-                {/* Weather module */}
-                <WeatherCard 
-                  weather={weather} 
-                  uiTextContent={uiTextContent}
-                  onRefresh={refreshWeather}
-                  refreshing={refreshingWeather}
+                {/* Complete Weather Module with map */}
+                <WeatherModule 
+                  initialLocation="Hong Kong"
+                  className="h-fit"
                 />
                 
                 {/* Events module with guest-specific filtering */}

@@ -9,24 +9,17 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     console.log('🔗 WebRTC Offer: SDP offer received, length:', body.length);
 
-    // For now, return a simple error response since VPS backend doesn't have WebRTC endpoint yet
+    // Return proper JSON error response instead of SDP for now
     console.log('🔗 WebRTC Offer: VPS backend WebRTC endpoint not implemented yet');
     
-    const errorResponse = {
+    return NextResponse.json({
       error: 'WebRTC endpoint not implemented',
-      message: 'VPS backend does not have /api/webrtc-offer endpoint yet. Using fallback.',
+      message: 'VPS backend does not have /api/webrtc-offer endpoint yet. Please implement backend WebRTC support.',
       fallback: true,
-      timestamp: new Date().toISOString()
-    };
-    
-    const sdpAnswer = `v=0
-o=- 0 0 IN IP4 127.0.0.1
-s=WebRTC Fallback
-t=0 0
-m=audio 0 RTP/AVP 0
-c=IN IP4 0.0.0.0`;
-    
-    return new NextResponse(sdpAnswer, {
+      timestamp: new Date().toISOString(),
+      instructions: 'Add WebRTC endpoint to VPS backend at http://145.79.10.35:3001/api/webrtc-offer'
+    }, { 
+      status: 503,
       headers: {
         'Content-Type': 'application/sdp',
         'Access-Control-Allow-Origin': '*',

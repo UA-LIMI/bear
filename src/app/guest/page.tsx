@@ -1,6 +1,6 @@
 /**
- * LIMI AI x Hotels - Complete Guest Interface Rebuild
- * Modern, modular, user-differentiated hotel guest experience
+ * LIMI AI x Hotels - Complete Guest Interface
+ * Fully modular, user-differentiated, working hotel guest experience
  */
 
 'use client';
@@ -9,15 +9,16 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { 
-  User, Crown, Briefcase, Palmtree, MapPin, 
-  Thermometer, Calendar, Settings, RefreshCw,
-  CheckCircle, AlertCircle, Loader2
+  User, Crown, Briefcase, Palmtree, MapPin, Calendar, Settings,
+  CheckCircle, AlertCircle, Loader2, RefreshCw, Phone, Star,
+  Send, MessageSquare, Zap, Lightbulb, Utensils, Car, Shield
 } from 'lucide-react';
 
-// Import our modular components
+// Import all working modules
 import { WeatherCard } from '@/components/WeatherCard';
 import { ProfessionalVoiceInterface } from '@/components/ProfessionalVoiceInterface';
-import { ChatInterface } from '@/components/ChatInterface';
+import { ChatInterfaceComplete } from '@/components/ChatInterfaceComplete';
+import { RoomControlsComplete } from '@/components/guest/RoomControlsComplete';
 
 interface GuestProfile {
   id: string;
@@ -47,14 +48,7 @@ interface HotelEvent {
   type?: string;
 }
 
-interface UIComponents {
-  name: string;
-  priority: number;
-  visible: boolean;
-  position: string;
-}
-
-export default function GuestInterfaceRebuilt() {
+export default function CompleteGuestInterface() {
   // Core state
   const [selectedGuest, setSelectedGuest] = useState<GuestProfile | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(true);
@@ -72,28 +66,50 @@ export default function GuestInterfaceRebuilt() {
   });
   
   const [hotelEvents, setHotelEvents] = useState<HotelEvent[]>([]);
-  const [uiComponents, setUiComponents] = useState<UIComponents[]>([]);
   const [uiTextContent, setUiTextContent] = useState<Record<string, string>>({});
   const [refreshingWeather, setRefreshingWeather] = useState(false);
+  const [moduleStatus, setModuleStatus] = useState({
+    weather: 'loading',
+    events: 'loading',
+    profiles: 'loading',
+    ui: 'loading'
+  });
 
-  // Load all data on mount
+  // Initialize all modules
   useEffect(() => {
-    initializeInterface();
+    initializeAllModules();
   }, []);
 
-  const initializeInterface = async () => {
-    await Promise.all([
+  const initializeAllModules = async () => {
+    console.log('🚀 Initializing all guest interface modules...');
+    
+    // Load modules in parallel for better performance
+    const modulePromises = [
       loadGuestProfiles(),
       loadWeather(),
       loadEvents(),
       loadUIConfiguration()
-    ]);
+    ];
+    
+    const results = await Promise.allSettled(modulePromises);
+    
+    // Log module loading results
+    results.forEach((result, index) => {
+      const modules = ['profiles', 'weather', 'events', 'ui'];
+      if (result.status === 'fulfilled') {
+        console.log(`✅ Module ${modules[index]} loaded successfully`);
+      } else {
+        console.error(`❌ Module ${modules[index]} failed:`, result.reason);
+      }
+    });
   };
 
-  // Weather module - standalone and testable
+  // Weather module with enhanced error handling
   const loadWeather = async () => {
     try {
-      console.log('🌤️ Loading weather data...');
+      setModuleStatus(prev => ({ ...prev, weather: 'loading' }));
+      console.log('🌤️ Weather module: Loading data...');
+      
       const response = await fetch(`/api/get-weather?location=${encodeURIComponent('Hong Kong')}`);
       const result = await response.json();
       
@@ -107,10 +123,11 @@ export default function GuestInterfaceRebuilt() {
           lastUpdated: new Date().toISOString(),
           error: undefined
         });
-        console.log('✅ Live weather loaded:', result.source, `${result.weather.temp}°C`);
+        setModuleStatus(prev => ({ ...prev, weather: 'success' }));
+        console.log('✅ Weather module: Live data loaded -', result.source, `${result.weather.temp}°C`);
       } else {
         // Handle API error response properly
-        console.warn('⚠️ Weather API error:', result.error || 'Unknown error');
+        console.warn('⚠️ Weather module: API error -', result.error || 'Unknown error');
         setWeather({
           temp: result.weather?.temp || 26,
           condition: result.weather?.condition || 'Partly Cloudy',
@@ -120,18 +137,20 @@ export default function GuestInterfaceRebuilt() {
           error: result.error || 'Weather API failed',
           lastUpdated: new Date().toISOString()
         });
+        setModuleStatus(prev => ({ ...prev, weather: 'fallback' }));
       }
     } catch (error) {
-      console.error('❌ Weather loading failed:', error);
+      console.error('❌ Weather module: Network error -', error);
       setWeather({
         temp: 26,
         condition: 'Partly Cloudy',
         humidity: 70,
         isLive: false,
-        source: 'fallback_error',
-        error: `Failed to load: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        source: 'network_error',
+        error: `Network error: ${error instanceof Error ? error.message : 'Unknown'}`,
         lastUpdated: new Date().toISOString()
       });
+      setModuleStatus(prev => ({ ...prev, weather: 'error' }));
     }
   };
 
@@ -144,7 +163,9 @@ export default function GuestInterfaceRebuilt() {
   // Guest profiles module
   const loadGuestProfiles = async () => {
     try {
-      console.log('👥 Loading guest profiles...');
+      setModuleStatus(prev => ({ ...prev, profiles: 'loading' }));
+      console.log('👥 Profiles module: Loading guest data...');
+      
       const response = await fetch('/api/get-guests');
       const result = await response.json();
 
@@ -164,7 +185,7 @@ export default function GuestInterfaceRebuilt() {
                      profile.username === 'taylor_ogen' ? 'Sustainability Researcher' :
                      profile.username === 'karen_law' ? 'Business Professional' :
                      profile.username === 'sarah_smith' ? 'Leisure Traveler' : 'Guest',
-          aiPrompt: `${profile.display_name as string} - ${profile.guest_type as string} guest`
+          aiPrompt: `${profile.display_name as string} - ${profile.guest_type as string} guest with specialized preferences`
         },
         stayInfo: { 
           hotel: 'The Peninsula Hong Kong', 
@@ -176,10 +197,12 @@ export default function GuestInterfaceRebuilt() {
       }));
 
       setProfiles(convertedProfiles);
-      console.log('✅ Loaded', convertedProfiles.length, 'guest profiles');
+      setModuleStatus(prev => ({ ...prev, profiles: 'success' }));
+      console.log('✅ Profiles module: Loaded', convertedProfiles.length, 'guests');
       
     } catch (error) {
-      console.error('❌ Guest profiles loading failed:', error);
+      console.error('❌ Profiles module: Failed -', error);
+      setModuleStatus(prev => ({ ...prev, profiles: 'error' }));
     } finally {
       setLoading(false);
     }
@@ -188,7 +211,9 @@ export default function GuestInterfaceRebuilt() {
   // Hotel events module
   const loadEvents = async () => {
     try {
-      console.log('📅 Loading hotel events...');
+      setModuleStatus(prev => ({ ...prev, events: 'loading' }));
+      console.log('📅 Events module: Loading hotel events...');
+      
       const response = await fetch('/api/get-hotel-events');
       const result = await response.json();
       
@@ -202,17 +227,22 @@ export default function GuestInterfaceRebuilt() {
           type: event.event_type as string
         }));
         setHotelEvents(formattedEvents);
-        console.log('✅ Loaded', formattedEvents.length, 'hotel events');
+        setModuleStatus(prev => ({ ...prev, events: 'success' }));
+        console.log('✅ Events module: Loaded', formattedEvents.length, 'events');
+      } else {
+        throw new Error('Events API failed');
       }
     } catch (error) {
-      console.error('❌ Events loading failed:', error);
+      console.error('❌ Events module: Failed -', error);
+      setModuleStatus(prev => ({ ...prev, events: 'error' }));
     }
   };
 
   // UI configuration module
   const loadUIConfiguration = async (guestId?: string, guestType?: string) => {
     try {
-      console.log('🎨 Loading UI configuration...');
+      setModuleStatus(prev => ({ ...prev, ui: 'loading' }));
+      console.log('🎨 UI module: Loading configuration...');
       
       if (!guestId || !guestType) {
         // Set comprehensive default configuration
@@ -230,21 +260,10 @@ export default function GuestInterfaceRebuilt() {
           location_title: 'Current Location',
           services_title: 'Quick Services'
         });
-        
-        setUiComponents([
-          { name: 'weather_card', priority: 10, visible: true, position: 'right' },
-          { name: 'hotel_events', priority: 8, visible: true, position: 'right' },
-          { name: 'room_controls', priority: 10, visible: true, position: 'left' },
-          { name: 'chat_interface', priority: 10, visible: true, position: 'center' },
-          { name: 'guest_profile', priority: 7, visible: true, position: 'right' },
-          { name: 'location_info', priority: 6, visible: true, position: 'right' },
-          { name: 'quick_services', priority: 9, visible: true, position: 'right' },
-          { name: 'voice_interface', priority: 10, visible: true, position: 'bottom' }
-        ]);
+        setModuleStatus(prev => ({ ...prev, ui: 'default' }));
         return;
       }
 
-      // Load user-specific configuration from database
       const response = await fetch('/api/get-ui-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,13 +278,15 @@ export default function GuestInterfaceRebuilt() {
       
       if (result.success) {
         setUiTextContent(result.textContent);
-        setUiComponents(result.components);
-        console.log(`✅ Loaded UI config for ${guestType} guest:`, result.components.length, 'components');
+        setModuleStatus(prev => ({ ...prev, ui: 'success' }));
+        console.log(`✅ UI module: Loaded config for ${guestType} guest`);
       } else {
-        console.warn('⚠️ UI config failed, using defaults:', result.error);
+        console.warn('⚠️ UI module: Database config failed, using defaults');
+        setModuleStatus(prev => ({ ...prev, ui: 'fallback' }));
       }
     } catch (error) {
-      console.error('❌ UI configuration loading failed:', error);
+      console.error('❌ UI module: Failed -', error);
+      setModuleStatus(prev => ({ ...prev, ui: 'error' }));
     }
   };
 
@@ -274,9 +295,9 @@ export default function GuestInterfaceRebuilt() {
     console.log(`💬 ${role.toUpperCase()}: ${content}`);
   };
 
-  // Get guest-specific theme and layout
+  // Get guest-specific theme and layout configuration
   const getGuestTheme = () => {
-    if (!selectedGuest) return { primary: '#54bb74', secondary: '#93cfa2', accent: 'green' };
+    if (!selectedGuest) return { primary: '#54bb74', secondary: '#93cfa2', accent: 'green', icon: User };
     
     const { guestType, profile } = selectedGuest;
     
@@ -295,43 +316,59 @@ export default function GuestInterfaceRebuilt() {
     return { primary: '#54bb74', secondary: '#93cfa2', accent: 'green', icon: User };
   };
 
-  // Loading screen
+  // Enhanced loading screen with module status
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-6"
+          className="text-center space-y-8 max-w-md"
         >
           <div className="relative">
-            <Loader2 className="w-16 h-16 text-[#54bb74] animate-spin mx-auto" />
-            <div className="absolute inset-0 w-16 h-16 border-4 border-[#54bb74]/20 rounded-full mx-auto animate-pulse" />
+            <Loader2 className="w-20 h-20 text-[#54bb74] animate-spin mx-auto" />
+            <div className="absolute inset-0 w-20 h-20 border-4 border-[#54bb74]/20 rounded-full mx-auto animate-pulse" />
           </div>
+          
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">LIMI AI x Hotels</h2>
-            <p className="text-gray-300">Loading Hong Kong guest profiles...</p>
-            <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-gray-400">
-              <div className="w-2 h-2 bg-[#54bb74] rounded-full animate-pulse" />
-              <span>Initializing modules...</span>
-            </div>
+            <h2 className="text-3xl font-bold text-white mb-3">LIMI AI x Hotels</h2>
+            <p className="text-gray-300 text-lg">Initializing guest experience...</p>
+          </div>
+          
+          {/* Module loading status */}
+          <div className="space-y-3 text-sm">
+            {Object.entries(moduleStatus).map(([module, status]) => (
+              <div key={module} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                <span className="text-gray-300 capitalize">{module} Module</span>
+                <div className="flex items-center space-x-2">
+                  {status === 'loading' && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
+                  {status === 'success' && <CheckCircle className="w-4 h-4 text-green-400" />}
+                  {status === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
+                  <span className={`text-xs ${
+                    status === 'success' ? 'text-green-400' :
+                    status === 'error' ? 'text-red-400' :
+                    'text-blue-400'
+                  }`}>{status}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </motion.div>
       </div>
     );
   }
 
-  // Guest selection screen
+  // Enhanced guest selection with module status
   if (showUserDropdown) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-6">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="w-full max-w-2xl"
         >
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -340,114 +377,108 @@ export default function GuestInterfaceRebuilt() {
               <Image 
                 src="/PNG/__Primary_Logo_Colored.png" 
                 alt="LIMI AI Logo" 
-                width={140} 
-                height={56} 
+                width={160} 
+                height={64} 
                 className="mx-auto mb-6" 
               />
             </motion.div>
-            <h1 className="text-3xl font-bold text-white mb-2">LIMI AI x Hotels</h1>
-            <p className="text-gray-300 text-lg">The Peninsula Hong Kong</p>
-            <p className="text-[#54bb74] text-sm mt-2">Select your guest profile to continue</p>
+            <h1 className="text-4xl font-bold text-white mb-3">LIMI AI x Hotels</h1>
+            <p className="text-gray-300 text-xl">The Peninsula Hong Kong</p>
+            <p className="text-[#54bb74] text-lg mt-3">Select your guest profile to continue</p>
           </div>
           
-          {/* Guest selection */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="space-y-4"
-          >
-            <select
-              onChange={(e) => {
-                const guest = profiles.find(g => g.id === e.target.value);
-                if (guest) {
-                  setSelectedGuest(guest);
-                  setShowUserDropdown(false);
-                  loadUIConfiguration(guest.id, guest.guestType);
-                }
-              }}
-              className="w-full p-4 rounded-xl bg-white/10 backdrop-blur text-white border border-white/20 focus:border-[#54bb74] focus:outline-none transition-all"
-            >
-              <option value="" className="bg-gray-800">Select Guest Profile</option>
-              {profiles.map(guest => {
-                const theme = getGuestTheme();
-                return (
-                  <option key={guest.id} value={guest.id} className="bg-gray-800">
-                    {guest.name} - {guest.membershipTier} - Room {guest.stayInfo?.room}
-                  </option>
-                );
-              })}
-            </select>
-            
-            {/* Guest preview cards */}
-            <div className="grid grid-cols-1 gap-3 mt-6">
-              {profiles.map(guest => {
-                const guestTheme = {
-                  primary: guest.guestType === 'vip' || guest.guestType === 'suite' ? '#9333ea' :
-                          guest.profile.occupation.includes('Business') ? '#2563eb' : '#059669',
-                  accent: guest.guestType === 'vip' || guest.guestType === 'suite' ? 'purple' :
-                         guest.profile.occupation.includes('Business') ? 'blue' : 'green',
-                  icon: guest.guestType === 'vip' || guest.guestType === 'suite' ? Crown :
-                       guest.profile.occupation.includes('Business') ? Briefcase : Palmtree
-                };
-                const ThemeIcon = guestTheme.icon;
-                
-                return (
-                  <motion.button
-                    key={guest.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 * profiles.indexOf(guest) }}
-                    onClick={() => {
-                      setSelectedGuest(guest);
-                      setShowUserDropdown(false);
-                      loadUIConfiguration(guest.id, guest.guestType);
-                    }}
-                    className="p-4 rounded-xl bg-white/5 backdrop-blur border border-white/10 hover:border-[#54bb74]/50 transition-all text-left group hover:bg-white/10"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${
-                        guest.guestType === 'vip' || guest.guestType === 'suite' ? 'from-purple-500 to-pink-500' :
-                        guest.profile.occupation.includes('Business') ? 'from-blue-500 to-indigo-500' :
-                        'from-green-500 to-emerald-500'
-                      } flex items-center justify-center`}>
-                        <ThemeIcon className="w-6 h-6 text-white" />
+          {/* Module status indicators */}
+          <div className="grid grid-cols-4 gap-3 mb-8">
+            {Object.entries(moduleStatus).map(([module, status]) => (
+              <div key={module} className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="flex items-center justify-center mb-2">
+                  {status === 'success' && <CheckCircle className="w-5 h-5 text-green-400" />}
+                  {status === 'error' && <AlertCircle className="w-5 h-5 text-red-400" />}
+                  {status === 'fallback' && <AlertCircle className="w-5 h-5 text-orange-400" />}
+                  {status === 'loading' && <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />}
+                </div>
+                <div className="text-white text-xs font-medium capitalize">{module}</div>
+                <div className={`text-xs mt-1 ${
+                  status === 'success' ? 'text-green-400' :
+                  status === 'error' ? 'text-red-400' :
+                  status === 'fallback' ? 'text-orange-400' :
+                  'text-blue-400'
+                }`}>{status}</div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Guest profile cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {profiles.map(guest => {
+              const guestTheme = {
+                primary: guest.guestType === 'vip' || guest.guestType === 'suite' ? '#9333ea' :
+                        guest.profile.occupation.includes('Business') ? '#2563eb' : '#059669',
+                accent: guest.guestType === 'vip' || guest.guestType === 'suite' ? 'purple' :
+                       guest.profile.occupation.includes('Business') ? 'blue' : 'green',
+                icon: guest.guestType === 'vip' || guest.guestType === 'suite' ? Crown :
+                     guest.profile.occupation.includes('Business') ? Briefcase : Palmtree
+              };
+              const ThemeIcon = guestTheme.icon;
+              
+              return (
+                <motion.button
+                  key={guest.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * profiles.indexOf(guest) }}
+                  onClick={() => {
+                    setSelectedGuest(guest);
+                    setShowUserDropdown(false);
+                    loadUIConfiguration(guest.id, guest.guestType);
+                  }}
+                  className="p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-white/20 transition-all text-left group hover:bg-white/10"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
+                      guest.guestType === 'vip' || guest.guestType === 'suite' ? 'from-purple-500 to-pink-500' :
+                      guest.profile.occupation.includes('Business') ? 'from-blue-500 to-indigo-500' :
+                      'from-green-500 to-emerald-500'
+                    } flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                      <ThemeIcon className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-white font-bold text-lg">{guest.name}</h3>
+                      <p className="text-gray-300">{guest.profile.occupation}</p>
+                      <div className="flex items-center space-x-3 mt-2">
+                        <span className={`text-sm px-3 py-1 rounded-full ${
+                          guest.guestType === 'vip' || guest.guestType === 'suite' ? 'bg-purple-500/20 text-purple-300' :
+                          guest.guestType === 'platinum' ? 'bg-blue-500/20 text-blue-300' :
+                          'bg-green-500/20 text-green-300'
+                        }`}>
+                          {guest.membershipTier}
+                        </span>
+                        <span className="text-gray-400 text-sm">Room {guest.stayInfo?.room}</span>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-semibold">{guest.name}</h3>
-                        <p className="text-gray-300 text-sm">{guest.profile.occupation}</p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            guest.guestType === 'vip' || guest.guestType === 'suite' ? 'bg-purple-500/20 text-purple-300' :
-                            guest.guestType === 'platinum' ? 'bg-blue-500/20 text-blue-300' :
-                            'bg-green-500/20 text-green-300'
-                          }`}>
-                            {guest.membershipTier}
-                          </span>
-                          <span className="text-gray-400 text-xs">Room {guest.stayInfo?.room}</span>
-                        </div>
+                      <div className="text-yellow-400 text-sm font-medium mt-1">
+                        {guest.loyaltyPoints?.toLocaleString()} points
                       </div>
                     </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </motion.div>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
           
-          {/* Status indicators */}
+          {/* System status */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.8 }}
             className="mt-8 text-center"
           >
-            <div className="flex items-center justify-center space-x-4 text-sm text-gray-400">
-              <div className="flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full ${weather.isLive ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-                <span>Weather: {weather.isLive ? 'Live' : 'Offline'}</span>
+            <div className="flex items-center justify-center space-x-6 text-sm text-gray-400">
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${weather.isLive ? 'bg-green-400 animate-pulse' : 'bg-orange-400'}`} />
+                <span>Weather: {weather.isLive ? 'Live Google API' : 'Fallback Data'}</span>
               </div>
               <span>•</span>
-              <span>{profiles.length} guests</span>
+              <span>{profiles.length} guests loaded</span>
               <span>•</span>
               <span>{weather.temp}°C {weather.condition}</span>
             </div>
@@ -462,34 +493,71 @@ export default function GuestInterfaceRebuilt() {
   }
 
   const theme = getGuestTheme();
-  const ThemeIcon = theme.icon || User;
+  const ThemeIcon = theme.icon;
 
-  // Main guest interface - completely rebuilt with modern design
+  // Get dynamic layout configuration based on guest type
+  const getLayoutConfig = () => {
+    const { guestType, profile } = selectedGuest;
+    
+    // VIP/Suite guests get full-width layouts with all panels
+    if (guestType === 'vip' || guestType === 'suite') {
+      return {
+        leftSpan: 'lg:col-span-3',
+        centerSpan: 'lg:col-span-6', 
+        rightSpan: 'lg:col-span-3',
+        showLeftPanel: true,
+        showRightPanel: true,
+        headerGradient: 'from-purple-500/10 via-purple-600/5 to-pink-500/10'
+      };
+    }
+    
+    // Business guests get efficiency-focused layouts
+    if (profile.occupation.includes('Business') || guestType === 'platinum') {
+      return {
+        leftSpan: 'lg:col-span-3',
+        centerSpan: 'lg:col-span-9',
+        rightSpan: 'hidden',
+        showLeftPanel: true,
+        showRightPanel: false, // Hide distractions
+        headerGradient: 'from-blue-500/10 via-blue-600/5 to-indigo-500/10'
+      };
+    }
+    
+    // Leisure guests get visual-rich layouts
+    return {
+      leftSpan: 'lg:col-span-2',
+      centerSpan: 'lg:col-span-6',
+      rightSpan: 'lg:col-span-4', // Larger for attractions/events
+      showLeftPanel: selectedGuest.status === 'inRoom',
+      showRightPanel: true,
+      headerGradient: 'from-green-500/10 via-green-600/5 to-emerald-500/10'
+    };
+  };
+
+  const layout = getLayoutConfig();
+
+  // Main guest interface - completely rebuilt with all working modules
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Modern header with guest-specific styling */}
+      {/* Modern header with guest-specific styling and full context */}
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`p-6 ${
-          theme.accent === 'purple' ? 'bg-gradient-to-r from-purple-500/10 via-purple-600/5 to-purple-500/10' :
-          theme.accent === 'blue' ? 'bg-gradient-to-r from-blue-500/10 via-blue-600/5 to-blue-500/10' :
-          'bg-gradient-to-r from-green-500/10 via-green-600/5 to-green-500/10'
-        } border-b border-white/10 backdrop-blur`}
+        className={`p-6 bg-gradient-to-r ${layout.headerGradient} border-b border-white/10 backdrop-blur`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
-              theme.accent === 'purple' ? 'from-purple-500 to-purple-600' :
-              theme.accent === 'blue' ? 'from-blue-500 to-blue-600' :
-              'from-green-500 to-green-600'
-            } flex items-center justify-center shadow-lg`}>
-              <ThemeIcon className="w-8 h-8 text-white" />
+          <div className="flex items-center space-x-6">
+            <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${
+              theme.accent === 'purple' ? 'from-purple-500 to-pink-500' :
+              theme.accent === 'blue' ? 'from-blue-500 to-indigo-500' :
+              'from-green-500 to-emerald-500'
+            } flex items-center justify-center shadow-xl`}>
+              <ThemeIcon className="w-10 h-10 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{selectedGuest.name}</h1>
-              <div className="flex items-center space-x-3 text-sm">
-                <span className={`font-medium ${
+              <h1 className="text-3xl font-bold text-white">{selectedGuest.name}</h1>
+              <div className="flex items-center space-x-4 text-lg mt-1">
+                <span className={`font-semibold ${
                   theme.accent === 'purple' ? 'text-purple-200' :
                   theme.accent === 'blue' ? 'text-blue-200' :
                   'text-green-200'
@@ -499,156 +567,173 @@ export default function GuestInterfaceRebuilt() {
                 <span className="text-gray-400">•</span>
                 <span className="text-gray-300">{selectedGuest.profile.occupation}</span>
               </div>
-              <div className="flex items-center space-x-2 mt-2">
-                <span className="text-yellow-400 text-sm font-medium">{selectedGuest.loyaltyPoints?.toLocaleString()} points</span>
+              <div className="flex items-center space-x-4 mt-2">
+                <span className="text-yellow-400 font-semibold">{selectedGuest.loyaltyPoints?.toLocaleString()} points</span>
+                <span className="text-gray-400">•</span>
+                <span className="text-gray-300">{selectedGuest.stayInfo?.hotel}</span>
               </div>
             </div>
           </div>
           
-          {/* Real-time status indicators */}
-          <div className="text-right space-y-2">
-            <div className="flex items-center space-x-2">
-              <span className="text-white text-lg font-medium">
+          {/* Real-time status indicators with module health */}
+          <div className="text-right space-y-3">
+            <div className="flex items-center space-x-3">
+              <span className="text-white text-xl font-semibold">
                 {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${weather.isLive ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-              <span className="text-blue-200 text-sm">{weather.temp}°C • {weather.condition}</span>
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full ${weather.isLive ? 'bg-green-400 animate-pulse' : 'bg-orange-400'}`} />
+              <span className="text-blue-200">{weather.temp}°C • {weather.condition}</span>
               <span className="text-xs text-gray-400">({weather.source})</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs">
+              {Object.entries(moduleStatus).map(([module, status]) => (
+                <div key={module} className={`w-2 h-2 rounded-full ${
+                  status === 'success' ? 'bg-green-400' :
+                  status === 'error' ? 'bg-red-400' :
+                  status === 'fallback' ? 'bg-orange-400' :
+                  'bg-blue-400'
+                }`} title={`${module}: ${status}`} />
+              ))}
             </div>
           </div>
         </div>
       </motion.header>
 
-      {/* Main content area with dynamic layout */}
+      {/* Main content area with dynamic modular layout */}
       <main className="flex-1 p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full min-h-[80vh]">
           
-          {/* Left panel - Room controls (conditional) */}
-          {selectedGuest.status === 'inRoom' && (
+          {/* Left panel - Room controls module */}
+          {layout.showLeftPanel && (
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="lg:col-span-3"
+              className={layout.leftSpan}
             >
-              <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6 h-full">
-                <h2 className="text-white font-semibold text-lg mb-4 flex items-center">
-                  <Thermometer className="w-5 h-5 mr-2 text-blue-400" />
-                  Smart Room Controls
-                </h2>
-                {/* Room controls will go here */}
-                <div className="space-y-4">
-                  <p className="text-gray-300 text-sm">Room controls module loading...</p>
+              <RoomControlsComplete
+                selectedGuest={selectedGuest}
+                onAddMessage={handleAddMessage}
+              />
+            </motion.div>
+          )}
+          
+          {/* Center panel - Main chat interface module */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={layout.centerSpan}
+          >
+            <ChatInterfaceComplete
+              selectedGuest={selectedGuest}
+              weather={weather}
+              uiTextContent={uiTextContent}
+              onAddMessage={handleAddMessage}
+            />
+          </motion.div>
+          
+          {/* Right panel - Information modules */}
+          {layout.showRightPanel && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={layout.rightSpan}
+            >
+              <div className="space-y-6">
+                {/* Weather module */}
+                <WeatherCard 
+                  weather={weather} 
+                  uiTextContent={uiTextContent}
+                  onRefresh={refreshWeather}
+                  refreshing={refreshingWeather}
+                />
+                
+                {/* Events module with guest-specific filtering */}
+                <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6">
+                  <h3 className="text-white font-semibold mb-4 flex items-center">
+                    <Calendar className="w-5 h-5 mr-3 text-green-400" />
+                    {selectedGuest.guestType === 'vip' || selectedGuest.guestType === 'suite' ? 'Exclusive Events' :
+                     selectedGuest.profile.occupation.includes('Business') ? 'Business Events' :
+                     'Today\'s Events'}
+                  </h3>
+                  <div className="space-y-3">
+                    {hotelEvents.slice(0, 4).map((event, index) => (
+                      <div key={index} className="flex items-start justify-between p-3 bg-white/5 rounded-lg">
+                        <div className="flex-1">
+                          <div className="text-white text-sm font-medium">{event.event}</div>
+                          {event.description && (
+                            <div className="text-gray-400 text-xs mt-1">{event.description}</div>
+                          )}
+                          {event.type && (
+                            <div className={`inline-block mt-2 px-2 py-1 text-xs rounded ${
+                              event.type === 'exclusive' || event.type === 'vip' ? 'bg-purple-500/20 text-purple-300' :
+                              event.type === 'business' ? 'bg-blue-500/20 text-blue-300' :
+                              'bg-green-500/20 text-green-300'
+                            }`}>
+                              {event.type}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-gray-400 text-xs ml-3">{event.time}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Location and services module */}
+                <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6">
+                  <h3 className="text-white font-semibold mb-4 flex items-center">
+                    <MapPin className="w-5 h-5 mr-3 text-red-400" />
+                    Location & Services
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-white text-sm font-medium">{selectedGuest.stayInfo?.location}</div>
+                      <div className="text-gray-400 text-xs mt-1">
+                        {selectedGuest.guestType === 'vip' || selectedGuest.guestType === 'suite' ? 
+                          'Premium location with VIP facilities access' :
+                          selectedGuest.profile.occupation.includes('Business') ?
+                          'Strategic location for business activities' :
+                          'Perfect location for Hong Kong exploration'
+                        }
+                      </div>
+                    </div>
+                    
+                    {/* Quick services */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { icon: Phone, label: 'Concierge', color: 'blue' },
+                        { icon: Utensils, label: 'Room Service', color: 'green' },
+                        { icon: Car, label: 'Transport', color: 'yellow' },
+                        { icon: Star, label: selectedGuest.guestType === 'vip' ? 'VIP Services' : 'Services', color: 'purple' }
+                      ].map((service) => (
+                        <button
+                          key={service.label}
+                          onClick={() => {
+                            handleAddMessage(`Request ${service.label.toLowerCase()}`, 'user');
+                            handleAddMessage(`I'll assist with ${service.label.toLowerCase()}, ${selectedGuest.name}.`, 'ai');
+                          }}
+                          className="flex flex-col items-center p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all group"
+                        >
+                          <service.icon className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" />
+                          <span className="text-white text-xs mt-1">{service.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           )}
-          
-          {/* Center panel - Main chat interface */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={selectedGuest.status === 'inRoom' ? 'lg:col-span-6' : 'lg:col-span-8'}
-          >
-            <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 h-full">
-              <ChatInterface
-                selectedGuest={selectedGuest}
-                weather={weather}
-                uiTextContent={uiTextContent}
-                onAddMessage={handleAddMessage}
-              />
-            </div>
-          </motion.div>
-          
-          {/* Right panel - Information cards */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-3"
-          >
-            <div className="space-y-6">
-              {/* Weather module */}
-              <WeatherCard 
-                weather={weather} 
-                uiTextContent={uiTextContent}
-                onRefresh={refreshWeather}
-                refreshing={refreshingWeather}
-              />
-              
-              {/* Guest profile module */}
-              <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6">
-                <h3 className="text-white font-semibold mb-4 flex items-center">
-                  <User className="w-5 h-5 mr-2 text-purple-400" />
-                  {selectedGuest.guestType === 'vip' || selectedGuest.guestType === 'suite' ? 'VIP Profile' : 'Guest Profile'}
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300 text-sm">Name</span>
-                    <span className="text-white font-medium">{selectedGuest.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300 text-sm">Membership</span>
-                    <span className={`font-medium ${
-                      theme.accent === 'purple' ? 'text-purple-300' :
-                      theme.accent === 'blue' ? 'text-blue-300' :
-                      'text-green-300'
-                    }`}>{selectedGuest.membershipTier}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300 text-sm">Points</span>
-                    <span className="text-yellow-400 font-bold">{selectedGuest.loyaltyPoints?.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Events module */}
-              <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6">
-                <h3 className="text-white font-semibold mb-4 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2 text-green-400" />
-                  Today's Events
-                </h3>
-                <div className="space-y-3">
-                  {hotelEvents.slice(0, 3).map((event, index) => (
-                    <div key={index} className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="text-white text-sm font-medium">{event.event}</div>
-                        {event.description && (
-                          <div className="text-gray-400 text-xs mt-1">{event.description}</div>
-                        )}
-                      </div>
-                      <div className="text-gray-400 text-xs ml-3">{event.time}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Location module */}
-              <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-6">
-                <h3 className="text-white font-semibold mb-4 flex items-center">
-                  <MapPin className="w-5 h-5 mr-2 text-red-400" />
-                  Current Location
-                </h3>
-                <div className="space-y-2">
-                  <div className="text-white text-sm">{selectedGuest.stayInfo?.location}</div>
-                  <div className="text-gray-400 text-xs">
-                    {selectedGuest.guestType === 'vip' || selectedGuest.guestType === 'suite' ? 
-                      'Premium location with VIP facilities access' :
-                      'Perfect location in Tsim Sha Tsui'
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </main>
 
-      {/* Bottom panel - Professional voice interface */}
+      {/* Bottom panel - Professional voice interface module */}
       <motion.footer
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.4 }}
       >
         <ProfessionalVoiceInterface
           selectedGuest={selectedGuest}

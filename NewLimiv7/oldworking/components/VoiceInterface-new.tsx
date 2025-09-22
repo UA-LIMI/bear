@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-// Using custom WebRTC implementation for better control
-import { RealtimeAgent, RealtimeSession } from '@openai/agents-realtime';
+import { RealtimeClient } from 'openai-realtime-api';
 import { Loader2, Phone, Settings, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
 interface GuestProfile {
@@ -32,15 +31,19 @@ interface VoiceInterfaceProps {
   onAddMessage: (content: string, role: 'user' | 'ai') => void;
 }
 
-function VoiceInterfaceContent({ selectedGuest, weather, uiTextContent, onAddMessage }: VoiceInterfaceProps) {
-  const [session, setSession] = useState<RealtimeSession | null>(null);
-  const [voiceConnected, setVoiceConnected] = useState(false);
-  const [voiceProcessing, setVoiceProcessing] = useState(false);
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+export function VoiceInterface({ selectedGuest, weather, uiTextContent, onAddMessage }: VoiceInterfaceProps) {
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>('');
   const [isMuted, setIsMuted] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
   
+  const peerConnection = useRef<RTCPeerConnection | null>(null);
+  const audioElement = useRef<HTMLAudioElement | null>(null);
+  const dataChannel = useRef<RTCDataChannel | null>(null);
+  const localStream = useRef<MediaStream | null>(null);
+
   // Get available audio devices
   const getConnectedAudioDevices = async () => {
     try {
@@ -67,11 +70,12 @@ function VoiceInterfaceContent({ selectedGuest, weather, uiTextContent, onAddMes
     };
   }, []);
 
-  const connectVoice = async () => {
-    setVoiceProcessing(true);
+  // Professional WebRTC voice connection following OpenAI's pattern
+  const startSession = async () => {
+    setIsConnecting(true);
     
     try {
-      // Get fresh weather context
+      // Get fresh weather data for context
       let currentWeather = weather;
       try {
         const weatherResponse = await fetch(`/api/get-weather?location=${encodeURIComponent('Hong Kong')}`);
@@ -89,32 +93,8 @@ function VoiceInterfaceContent({ selectedGuest, weather, uiTextContent, onAddMes
         console.warn('Could not fetch fresh weather for voice context:', weatherError);
       }
 
-      // Build comprehensive AI instructions
-      const comprehensiveInstructions = `
-You are LIMI AI for The Peninsula Hong Kong. Current guest: ${selectedGuest.name} (${selectedGuest.profile.occupation}) in Room ${selectedGuest.stayInfo?.room}.
-
-REAL-TIME CONTEXT:
-- Weather: ${currentWeather.temp}°C, ${currentWeather.condition}, ${currentWeather.humidity}% humidity (${currentWeather.isLive ? 'live data' : 'fallback'})
-- Location: ${selectedGuest.stayInfo?.location}
-- Membership: ${selectedGuest.membershipTier} (${selectedGuest.loyaltyPoints} points)
-
-VOICE INTERACTION RULES:
-1. Keep responses under 30 words for natural conversation flow
-2. Always confirm before room changes: "Should I turn on romantic lighting?"
-3. Use guest name and room number for personalization
-4. Stop immediately if interrupted - respond with "Yes, what can I help with?"
-5. Reference current weather for activity suggestions
-
-AVAILABLE ROOM CONTROLS:
-- Lighting: FX=88 (romantic candle), #FFFFFF (work light), OFF (turn off)
-- Temperature: Ask preferred setting before adjusting
-- Services: Room service, concierge, transportation
-
-Provide helpful, concise assistance based on current weather and guest preferences.
-      `.trim();
-      
-      // Get ephemeral key from backend
-      const response = await fetch('/api/client-secret', {
+      // Get ephemeral token from our backend
+      const tokenResponse = await fetch('/api/client-secret', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -124,22 +104,31 @@ Provide helpful, concise assistance based on current weather and guest preferenc
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Voice session failed: ${errorData.message || 'Unknown error'}`);
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json();
+        throw new Error(`Failed to get session token: ${errorData.message || 'Unknown error'}`);
       }
 
-      const { ephemeralKey } = await response.json();
-      
-      // Create RealtimeAgent with enhanced instructions
-      const agent = new RealtimeAgent({
-        name: 'LIMI AI Assistant',
-        instructions: comprehensiveInstructions
+      const { ephemeralKey } = await tokenResponse.json();
+
+      // Create peer connection following OpenAI's WebRTC pattern
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
       });
 
-      const voiceSession = new RealtimeSession(agent);
-      
-      // Get audio stream with professional WebRTC constraints
+      // Set up to play remote audio from the model
+      audioElement.current = document.createElement('audio');
+      audioElement.current.autoplay = true;
+      pc.ontrack = (e) => {
+        if (audioElement.current) {
+          audioElement.current.srcObject = e.streams[0];
+        }
+      };
+
+      // Add local audio track with professional constraints
       const audioConstraints = {
         audio: {
           deviceId: selectedMicrophone ? { exact: selectedMicrophone } : undefined,
@@ -151,60 +140,140 @@ Provide helpful, concise assistance based on current weather and guest preferenc
           latency: { ideal: 0.01, max: 0.05 }
         }
       };
+
+      const ms = await navigator.mediaDevices.getUserMedia(audioConstraints);
+      localStream.current = ms;
       
-      const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
-      
-      // Log audio settings for debugging
-      const audioTrack = stream.getAudioTracks()[0];
+      // Log audio settings
+      const audioTrack = ms.getAudioTracks()[0];
       if (audioTrack) {
         const settings = audioTrack.getSettings();
-        console.log('🎤 Audio track settings:', settings);
+        console.log('🎤 Professional audio settings:', settings);
       }
       
-      setAudioStream(stream);
+      pc.addTrack(ms.getTracks()[0]);
 
-      // Connect to OpenAI Realtime API
-      await voiceSession.connect({ apiKey: ephemeralKey });
-      
-      setSession(voiceSession);
-      setVoiceConnected(true);
-      
-      console.log('✅ Professional voice session connected');
-      onAddMessage(`Voice connected! Hello ${selectedGuest.name}, I'm your AI assistant with professional audio quality. How can I help?`, 'ai');
+      // Set up data channel for events
+      const dc = pc.createDataChannel('oai-events');
+      dataChannel.current = dc;
+
+      // Create offer and set local description
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // Connect to OpenAI Realtime API using WebRTC
+      const baseUrl = 'https://api.openai.com/v1/realtime/calls';
+      const model = 'gpt-4o-realtime-preview';
+      const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+        method: 'POST',
+        body: offer.sdp,
+        headers: {
+          'Authorization': `Bearer ${ephemeralKey}`,
+          'Content-Type': 'application/sdp',
+        },
+      });
+
+      if (!sdpResponse.ok) {
+        throw new Error(`SDP exchange failed: ${sdpResponse.status}`);
+      }
+
+      const sdp = await sdpResponse.text();
+      const answer = { type: 'answer' as const, sdp };
+      await pc.setRemoteDescription(answer);
+
+      peerConnection.current = pc;
+
+      // Set up event listeners
+      dc.addEventListener('open', () => {
+        console.log('✅ Professional voice session connected');
+        setIsSessionActive(true);
+        setEvents([]);
+        onAddMessage(`Voice connected! Hello ${selectedGuest.name}, I'm your AI assistant with professional audio quality. How can I help?`, 'ai');
+        
+        // Send session configuration with guest context
+        sendClientEvent({
+          type: 'session.update',
+          session: {
+            instructions: `You are LIMI AI for The Peninsula Hong Kong. Guest: ${selectedGuest.name} (${selectedGuest.profile.occupation}) in Room ${selectedGuest.stayInfo?.room}. Weather: ${currentWeather.temp}°C ${currentWeather.condition}. Keep responses under 30 words. Always confirm before room changes.`,
+            voice: 'alloy',
+            turn_detection: { type: 'server_vad', threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 200 }
+          }
+        });
+      });
+
+      dc.addEventListener('message', (e) => {
+        const event = JSON.parse(e.data);
+        if (!event.timestamp) {
+          event.timestamp = new Date().toLocaleTimeString();
+        }
+        setEvents(prev => [event, ...prev]);
+        
+        // Handle AI responses
+        if (event.type === 'response.audio_transcript.done') {
+          onAddMessage(event.transcript, 'ai');
+        }
+      });
 
     } catch (error) {
-      console.error('❌ Voice connection failed:', error);
-      onAddMessage(`Voice connection failed: ${error instanceof Error ? error.message : 'Unknown error'}. You can still chat with me using text.`, 'ai');
+      console.error('❌ Professional voice connection failed:', error);
+      onAddMessage(`Voice connection failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or use text chat.`, 'ai');
     } finally {
-      setVoiceProcessing(false);
+      setIsConnecting(false);
     }
   };
 
-  const disconnectVoice = async () => {
+  // Stop session and clean up
+  const stopSession = () => {
     try {
-      if (session) {
-        session.close();
+      if (dataChannel.current) {
+        dataChannel.current.close();
       }
-      if (audioStream) {
-        audioStream.getTracks().forEach(track => track.stop());
-        setAudioStream(null);
+
+      if (peerConnection.current) {
+        peerConnection.current.getSenders().forEach((sender) => {
+          if (sender.track) {
+            sender.track.stop();
+          }
+        });
+        peerConnection.current.close();
       }
-      setSession(null);
-      setVoiceConnected(false);
-      setVoiceProcessing(false);
+
+      if (localStream.current) {
+        localStream.current.getTracks().forEach(track => track.stop());
+      }
+
+      setIsSessionActive(false);
+      dataChannel.current = null;
+      peerConnection.current = null;
+      localStream.current = null;
+      
       onAddMessage(`Voice disconnected. Thank you ${selectedGuest.name}, have a wonderful stay!`, 'ai');
     } catch (error) {
       console.error('❌ Disconnect error:', error);
-      setSession(null);
-      setVoiceConnected(false);
-      setAudioStream(null);
+    }
+  };
+
+  // Send event to OpenAI
+  const sendClientEvent = (message: any) => {
+    if (dataChannel.current && dataChannel.current.readyState === 'open') {
+      const timestamp = new Date().toLocaleTimeString();
+      message.event_id = message.event_id || crypto.randomUUID();
+      
+      dataChannel.current.send(JSON.stringify(message));
+      
+      if (!message.timestamp) {
+        message.timestamp = timestamp;
+      }
+      setEvents(prev => [message, ...prev]);
+    } else {
+      console.error('Failed to send message - no data channel available', message);
     }
   };
 
   // Toggle mute functionality
   const toggleMute = () => {
-    if (audioStream) {
-      const audioTrack = audioStream.getAudioTracks()[0];
+    if (localStream.current) {
+      const audioTrack = localStream.current.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsMuted(!audioTrack.enabled);
@@ -220,15 +289,15 @@ Provide helpful, concise assistance based on current weather and guest preferenc
         <div className="flex items-center gap-3">
           {/* Main voice connection button */}
           <button
-            onClick={voiceConnected ? disconnectVoice : connectVoice}
-            disabled={voiceProcessing}
+            onClick={isSessionActive ? stopSession : startSession}
+            disabled={isConnecting}
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-              voiceConnected ? 'bg-red-500 hover:bg-red-600' : 'bg-[#54bb74] hover:bg-[#54bb74]/80'
-            } ${voiceProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} shadow-lg`}
+              isSessionActive ? 'bg-red-500 hover:bg-red-600' : 'bg-[#54bb74] hover:bg-[#54bb74]/80'
+            } ${isConnecting ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'} shadow-lg`}
           >
-            {voiceProcessing ? (
+            {isConnecting ? (
               <Loader2 className="w-8 h-8 text-white animate-spin" />
-            ) : voiceConnected ? (
+            ) : isSessionActive ? (
               <Phone className="w-8 h-8 text-white" />
             ) : (
               <Mic className="w-8 h-8 text-white" />
@@ -236,7 +305,7 @@ Provide helpful, concise assistance based on current weather and guest preferenc
           </button>
           
           {/* Microphone mute toggle */}
-          {voiceConnected && (
+          {isSessionActive && (
             <button
               onClick={toggleMute}
               className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
@@ -249,7 +318,7 @@ Provide helpful, concise assistance based on current weather and guest preferenc
           )}
           
           {/* Device selector */}
-          {audioDevices.length > 1 && !voiceConnected && (
+          {audioDevices.length > 1 && !isSessionActive && (
             <select
               value={selectedMicrophone}
               onChange={(e) => setSelectedMicrophone(e.target.value)}
@@ -270,10 +339,10 @@ Provide helpful, concise assistance based on current weather and guest preferenc
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[#f3ebe2] text-sm font-medium">
-                {voiceConnected ? (uiTextContent.voice_connected || 'Voice Connected to LIMI AI') : (uiTextContent.voice_disconnected || 'Voice Disconnected')}
+                {isSessionActive ? (uiTextContent.voice_connected || 'Voice Connected to LIMI AI') : (uiTextContent.voice_disconnected || 'Voice Disconnected')}
               </p>
               <p className="text-[#f3ebe2]/60 text-xs">
-                {voiceConnected ? 
+                {isSessionActive ? 
                   `Room ${selectedGuest.stayInfo?.room} • Professional WebRTC • ${audioDevices.length} devices` : 
                   'Professional voice chat with echo cancellation and noise suppression'
                 }
@@ -281,7 +350,7 @@ Provide helpful, concise assistance based on current weather and guest preferenc
             </div>
             
             {/* Connection quality indicator */}
-            {voiceConnected && (
+            {isSessionActive && (
               <div className="flex items-center space-x-2">
                 <div className="text-xs text-green-300">
                   <div className="flex items-center space-x-1">
@@ -304,7 +373,7 @@ Provide helpful, concise assistance based on current weather and guest preferenc
       </div>
       
       {/* Professional audio status */}
-      {voiceConnected && (
+      {isSessionActive && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
@@ -315,16 +384,16 @@ Provide helpful, concise assistance based on current weather and guest preferenc
               Audio Quality: {audioDevices.find(d => d.deviceId === selectedMicrophone)?.label || 'Default Microphone'}
             </span>
             <span className="text-green-300">
-              ✅ Echo Cancellation • Noise Suppression • Auto Gain
+              ✅ Professional WebRTC • Echo Cancellation • Noise Suppression
             </span>
+          </div>
+          
+          {/* Event count for debugging */}
+          <div className="mt-1 text-xs text-blue-300">
+            Events received: {events.length} • Session active: {isSessionActive ? 'Yes' : 'No'}
           </div>
         </motion.div>
       )}
     </div>
   );
-}
-
-// Export the main component
-export function VoiceInterface(props: VoiceInterfaceProps) {
-  return <VoiceInterfaceContent {...props} />;
 }

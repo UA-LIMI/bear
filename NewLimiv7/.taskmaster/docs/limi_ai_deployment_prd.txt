@@ -1,0 +1,185 @@
+# Product Requirements Document (PRD): LIMI AI New Deployment v7
+
+**Version:** 1.0
+**Status:** INITIAL DRAFT
+**Project:** NewLimiv7
+
+## Overview
+
+This PRD outlines the requirements for the NewLimiv7 deployment of the LIMI AI system. LIMI AI is an intelligent hotel guest experience platform that combines real-time voice and text chat with generative UI capabilities to provide personalized assistance to hotel guests. The system integrates with IoT devices, databases, and AI services to create a seamless, modern guest experience.
+
+**Problem Solved:** Traditional hotel guest services are limited to phone calls, in-person requests, and basic digital interfaces. LIMI AI revolutionizes this by providing an always-available, context-aware AI assistant that can handle complex requests, control room environments, provide local recommendations, and learn from guest preferences.
+
+**Target Users:**
+- Hotel guests (primary): Seeking personalized, instant assistance
+- Hotel staff (secondary): Need visibility into guest requests and system health
+- System administrators: Require monitoring, configuration, and maintenance tools
+
+**Value Proposition:** LIMI AI delivers a premium, technology-forward guest experience that differentiates the hotel while reducing staff workload and improving operational efficiency.
+
+## Core Features
+
+### 1. Intelligent Guest Assistant
+- **Voice Interaction:** Real-time voice conversations using OpenAI Realtime API
+- **Text Chat:** Secure, context-aware text messaging with generative UI
+- **Personalization:** Dynamic context building based on guest profiles, preferences, and stay history
+- **Multilingual Support:** Support for multiple languages with natural language understanding
+- **24/7 Availability:** Always-on AI assistant for guest requests
+
+### 2. Smart Room Controls
+- **IoT Integration:** Control of WLED lighting systems, temperature, and other smart devices
+- **Preset Scenes:** Romantic, work, relaxation, and custom lighting effects
+- **Voice Commands:** Natural language control of room environment
+- **Device Feedback:** Real-time status updates and synchronization
+
+### 3. Generative User Interface
+- **Dynamic Components:** AI-generated interactive UI elements in chat
+- **Contextual Widgets:** Weather, events, services, and location-based information
+- **Component Library:** Reusable UI components for consistent experience
+- **Responsive Design:** Mobile, tablet, and desktop optimized interfaces
+
+### 4. Guest Profile Management
+- **Profile Selection:** Intuitive guest selection interface
+- **Preference Learning:** AI learns and stores guest preferences
+- **Context Persistence:** Maintains conversation and preference history
+- **Multi-Guest Support:** Handles multiple guests per room/account
+
+### 5. Hotel Operations Integration
+- **Staff Dashboard:** Real-time view of guest requests and system status
+- **Request Routing:** Intelligent routing of actionable requests to staff
+- **Analytics:** Usage patterns and guest satisfaction metrics
+- **System Monitoring:** Health checks and performance monitoring
+
+## Technical Architecture
+
+### System Components
+- **Frontend (Next.js):** React-based SPA with real-time capabilities
+- **Backend (Express):** RESTful API server for AI integration and business logic
+- **Database (Supabase):** PostgreSQL with real-time subscriptions
+- **AI Services:** OpenAI Realtime API and Vercel AI SDK for chat/UI generation
+- **IoT Integration:** MQTT protocol for device communication
+- **Infrastructure:** Docker containers with orchestration
+
+### Data Models
+- **Guest Profiles:** User identity, preferences, and stay information
+- **Conversation Sessions:** Chat and voice interaction history
+- **Device States:** IoT device status and control history
+- **System Configuration:** UI components, text content, and layout settings
+- **Analytics Data:** Usage patterns and performance metrics
+
+### APIs and Integrations
+- **OpenAI Realtime API:** Voice interaction and ephemeral key management
+- **Vercel AI SDK:** Text chat and generative UI components
+- **Supabase:** Database and real-time subscriptions
+- **MQTT Broker:** IoT device communication
+- **Weather API:** Local weather information
+- **Geolocation Services:** Location-based recommendations
+
+### Infrastructure Requirements
+- **Hosting:** Vercel for frontend, VPS for backend
+- **Database:** Supabase PostgreSQL with RLS policies
+- **Storage:** Asset hosting and session data
+- **Security:** API key management and access controls
+- **Monitoring:** Health checks and performance monitoring
+
+## Development Roadmap
+
+### Phase 1: Foundation (MVP Core)
+1. **Project Setup:** Initialize Next.js frontend and Express backend
+2. **Database Schema:** Implement core tables and relationships
+3. **Authentication:** Basic guest profile selection system
+4. **Basic Chat:** Simple text interface with AI responses
+5. **Basic UI:** Responsive layout with essential components
+
+### Phase 2: Voice Integration
+1. **Voice Sessions:** Implement OpenAI Realtime API integration
+2. **Audio Controls:** Mute, volume, and session management
+3. **Context Building:** Dynamic AI instructions based on guest data
+4. **Error Handling:** Robust reconnection and error recovery
+
+### Phase 3: Smart Features
+1. **IoT Controls:** WLED lighting and basic device control
+2. **Generative UI:** Dynamic component generation in chat
+3. **Personalization:** Guest preference learning and storage
+4. **Real-time Updates:** Live weather, events, and status
+
+### Phase 4: Advanced Features
+1. **Staff Dashboard:** Request monitoring and management
+2. **Analytics:** Usage tracking and reporting
+3. **Advanced Personalization:** Multi-modal context and recommendations
+4. **Performance Optimization:** Caching, rate limiting, and efficiency
+
+### Phase 5: Production Readiness
+1. **Security Audit:** Comprehensive security review
+2. **Performance Testing:** Load testing and optimization
+3. **Documentation:** Complete API and user documentation
+4. **Deployment:** Production environment setup
+
+## Logical Dependency Chain
+
+### Foundation Layer (Must be Built First)
+1. **Database Schema:** All other features depend on data models
+2. **Project Structure:** Consistent architecture across frontend/backend
+3. **Basic Authentication:** Guest profile system as entry point
+4. **API Infrastructure:** Secure communication patterns
+
+### User-Facing Layer (Quick Path to Usable Frontend)
+1. **Guest Selection UI:** Immediate user interaction
+2. **Basic Chat Interface:** Core functionality demonstration
+3. **Simple Responses:** AI integration without complex features
+4. **Basic Styling:** Professional appearance
+
+### Enhancement Layer (Build Upon Foundation)
+1. **Voice Integration:** Add audio capabilities to existing chat
+2. **IoT Controls:** Extend to device control after basic chat works
+3. **Generative UI:** Enhance chat with dynamic components
+4. **Personalization:** Add learning after core interactions
+
+### Operations Layer (Final Integration)
+1. **Staff Tools:** Build after guest features are stable
+2. **Analytics:** Implement after usage data is collected
+3. **Advanced Features:** Add complexity only after MVP is solid
+
+## Risks and Mitigations
+
+### Technical Challenges
+- **AI API Reliability:** Use retry logic, caching, and fallback responses
+- **Real-time Performance:** Implement WebSocket connections and optimize data flow
+- **IoT Device Compatibility:** Abstract device interfaces and provide configuration
+- **Security Vulnerabilities:** Regular audits, API key rotation, and access controls
+
+### MVP Definition
+- **Core MVP:** Guest selection → Text chat → Basic responses
+- **Enhanced MVP:** Add voice chat and lighting controls
+- **Full MVP:** Include generative UI and personalization
+- **Defer:** Advanced analytics and staff dashboard to post-MVP
+
+### Resource Constraints
+- **Development Time:** Focus on core features first, use existing patterns
+- **API Costs:** Implement caching and rate limiting
+- **Infrastructure Costs:** Start with managed services, optimize later
+- **Technical Debt:** Regular refactoring and code reviews
+
+## Appendix
+
+### Research Findings
+- OpenAI Realtime API provides robust voice interaction capabilities
+- Vercel AI SDK enables seamless generative UI implementation
+- Supabase offers real-time database features ideal for this use case
+- MQTT protocol is well-suited for IoT device communication
+
+### Technical Specifications
+- **Frontend:** Next.js 14+ with React 18, TypeScript
+- **Backend:** Node.js with Express, Docker containerization
+- **Database:** PostgreSQL with Supabase, Row Level Security
+- **AI Services:** OpenAI Realtime API, Vercel AI SDK
+- **IoT:** MQTT protocol with WLED device support
+- **Deployment:** Vercel for frontend, VPS for backend
+
+### Success Metrics
+- **User Engagement:** Average session duration and interaction frequency
+- **Task Completion:** Successful handling of guest requests
+- **System Reliability:** Uptime and error rates
+- **Performance:** Response times and resource utilization
+
+

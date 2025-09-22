@@ -142,15 +142,20 @@ export default function GuestInterface() {
 
   const loadWeather = async () => {
     try {
-      const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=Hong Kong&appid=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&units=metric`);
-      const data = await response.json();
-      setWeather({
-        temp: Math.round(data.main.temp),
-        condition: data.weather[0].main,
-        humidity: data.main.humidity
-      });
+      const response = await fetch(`/api/get-weather?location=${encodeURIComponent('Hong Kong')}`);
+      const result = await response.json();
+      if (result?.success && result.weather) {
+        setWeather({
+          temp: Math.round(result.weather.temp),
+          condition: result.weather.condition,
+          humidity: result.weather.humidity
+        });
+      } else {
+        setWeather(prev => ({ ...prev, temp: 26, condition: 'Partly Cloudy', humidity: 70 }));
+      }
     } catch (error) {
       console.error('Weather loading failed:', error);
+      setWeather({ temp: 26, condition: 'Partly Cloudy', humidity: 70 });
     }
   };
 
@@ -361,8 +366,7 @@ CONVERSATION MEMORY AND CONTEXT BUILDING:
         body: JSON.stringify({
           sessionId: `guest_${selectedGuest?.id}_${Date.now()}`,
           model: 'gpt-4o-realtime-preview',
-          voice: 'alloy',
-          instructions: comprehensiveInstructions
+          voice: 'alloy'
         })
       });
 
@@ -710,7 +714,7 @@ CONVERSATION MEMORY AND CONTEXT BUILDING:
     <div className="min-h-screen bg-[#292929] flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Image src="/png/__Primary_Logo_Colored.png" alt="LIMI Logo" width={120} height={48} className="mx-auto mb-4" />
+          <Image src="/PNG/__Primary_Logo_Colored.png" alt="LIMI Logo" width={120} height={48} className="mx-auto mb-4" />
           <h1 className="text-[#f3ebe2] text-2xl font-bold mb-2">The Peninsula Hong Kong</h1>
           <p className="text-[#93cfa2] text-sm">Select your guest profile</p>
         </div>

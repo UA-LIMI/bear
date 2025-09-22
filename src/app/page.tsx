@@ -9,7 +9,7 @@ export default function Home() {
         {/* Limi AI Logo */}
         <div className="flex flex-col items-center gap-4">
           <Image
-            src="/png/__Primary_Logo_Colored.png"
+            src="/PNG/__Primary_Logo_Colored.png"
             alt="Limi AI Logo"
             width={200}
             height={80}

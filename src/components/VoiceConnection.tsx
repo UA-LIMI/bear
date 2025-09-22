@@ -349,7 +349,7 @@ export function VoiceConnection() {
         >
           <div className="flex items-center justify-center space-x-3 mb-4">
             <Image 
-              src="/png/__Wordmark_Green.png" 
+              src="/PNG/__Wordmark_Green.png"
               alt="LIMI Logo" 
               width={120}
               height={48}

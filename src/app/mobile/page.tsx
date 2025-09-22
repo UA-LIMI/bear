@@ -62,7 +62,7 @@ export default function MobileAI() {
   const [user] = useState<User>({
     firstName: 'Alex',
     plan: 'Pro',
-    avatar: '/png/__Logo_Icon_Colored.png',
+    avatar: '/PNG/__Logo_Icon_Colored.png',
     usageThisWeek: '1h 23m',
     streak: 7
   });
@@ -143,7 +143,7 @@ export default function MobileAI() {
         >
           <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-[#FF6A55] to-[#4DA3FF] p-1">
             <img 
-              src="/png/__Logo_Icon_White.png" 
+              src="/PNG/__Logo_Icon_White.png" 
               alt="LIMI" 
               className="w-full h-full object-contain p-2"
             />
@@ -487,7 +487,7 @@ export default function MobileAI() {
       >
         <div className="flex items-center gap-3">
           <Image 
-            src="/png/__Logo_Icon_Colored.png" 
+            src="/PNG/__Logo_Icon_Colored.png" 
             alt="LIMI" 
             width={32}
             height={32}

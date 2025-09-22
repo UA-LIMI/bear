@@ -626,6 +626,8 @@ export default function CompleteGuestInterface() {
           >
             <AIModule
               selectedGuest={selectedGuest}
+              weather={weather}
+              uiTextContent={uiTextContent}
               onAddMessage={handleAddMessage}
             />
           </motion.div>

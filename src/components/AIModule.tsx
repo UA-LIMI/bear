@@ -7,7 +7,7 @@ import {
   Mic, MicOff, Send, MessageSquare, Volume2, VolumeX, 
   Loader2, Settings, Phone
 } from 'lucide-react';
-import { TranscriptOverlayComponent } from '@pipecat-ai/voice-ui-kit';
+import { TranscriptOverlayComponent, UserAudioOutputControlComponent } from '@pipecat-ai/voice-ui-kit';
 
 interface AIMessage {
   id: string;
@@ -52,9 +52,12 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
   const [isMuted, setIsMuted] = useState(false);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>('');
+  const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedSpeaker, setSelectedSpeaker] = useState<string>('');
   const [transcript, setTranscript] = useState<string[]>([]);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [showDeviceSettings, setShowDeviceSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Enumerate audio devices on component mount
@@ -67,18 +70,25 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
     };
   }, []);
 
-  // Get available audio input devices
+  // Get available audio input and output devices
   const getConnectedAudioDevices = async () => {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(device => device.kind === 'audioinput');
+      const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+      
       setAudioDevices(audioInputs);
+      setAudioOutputDevices(audioOutputs);
       
       if (!selectedMicrophone && audioInputs.length > 0) {
         setSelectedMicrophone(audioInputs[0].deviceId);
       }
       
-      console.log('📱 Audio devices found:', audioInputs.length);
+      if (!selectedSpeaker && audioOutputs.length > 0) {
+        setSelectedSpeaker(audioOutputs[0].deviceId);
+      }
+      
+      console.log('📱 Audio devices found:', audioInputs.length, 'inputs,', audioOutputs.length, 'outputs');
     } catch (error) {
       console.error('Error enumerating audio devices:', error);
     }
@@ -317,13 +327,91 @@ Provide helpful, concise assistance based on current weather and guest preferenc
             <h2 className="text-white font-bold text-xl">LIMI AI Assistant</h2>
             <p className="text-gray-300 text-sm">Professional Voice & Text Chat • Room {selectedGuest.stayInfo?.room}</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${voiceConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`} />
-            <span className={`text-xs ${voiceConnected ? 'text-green-300' : 'text-gray-400'}`}>
-              {voiceConnected ? 'Connected' : 'Disconnected'}
-            </span>
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${voiceConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`} />
+              <span className={`text-xs ${voiceConnected ? 'text-green-300' : 'text-gray-400'}`}>
+                {voiceConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowDeviceSettings(!showDeviceSettings)}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all"
+              title="Audio device settings"
+            >
+              <Settings className="w-4 h-4 text-white" />
+            </button>
           </div>
         </div>
+
+        {/* Device Settings Panel */}
+        {showDeviceSettings && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="px-6 pb-6 border-b border-white/10"
+          >
+            <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-4">
+              <h4 className="text-white font-medium text-center">Audio Device Selection</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Microphone Input Selection */}
+                <div>
+                  <label className="text-white text-sm font-medium block mb-2">🎤 Microphone Input</label>
+                  <select
+                    value={selectedMicrophone}
+                    onChange={(e) => setSelectedMicrophone(e.target.value)}
+                    className="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20 focus:border-white/40 focus:outline-none"
+                    disabled={voiceConnected}
+                  >
+                    <option value="">Select microphone</option>
+                    {audioDevices.map(device => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || `Microphone ${device.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Speaker Output Selection */}
+                <div>
+                  <label className="text-white text-sm font-medium block mb-2">🔊 Audio Output</label>
+                  <UserAudioOutputControlComponent
+                    availableDevices={audioOutputDevices}
+                    selectedDevice={audioOutputDevices.find(d => d.deviceId === selectedSpeaker) || undefined}
+                    updateDevice={(deviceId) => setSelectedSpeaker(deviceId)}
+                    placeholder="Select speakers/headphones"
+                    className="w-full"
+                    classNames={{
+                      selectTrigger: "w-full p-3 rounded-lg bg-white/10 text-white border border-white/20 focus:border-white/40",
+                      selectContent: "bg-gray-800 border border-white/20",
+                      selectItem: "text-white hover:bg-white/10"
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="text-center text-xs text-gray-400">
+                Professional WebRTC • Echo Cancellation • Noise Suppression • Auto Gain Control
+              </div>
+              
+              <div className="flex items-center justify-center space-x-4 text-xs">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  <span className="text-green-400">24kHz Sample Rate</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                  <span className="text-blue-400">Low Latency</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full" />
+                  <span className="text-purple-400">HD Audio</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Enhanced Voice Interface (when connected) */}

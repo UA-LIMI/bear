@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import UserLocationDisplay from '../../components/UserLocationDisplay';
 
 interface UserProfile {
   id: string;
@@ -18,29 +16,28 @@ interface UserProfile {
 export default function Dashboard() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lightingStatus, setLightingStatus] = useState<string>('unknown');
+  const [lightingStatus, setLightingStatus] = useState<string>('ready');
 
   useEffect(() => {
-    // For demo, auto-login as Umer Asif
-    loadUserProfile('a397a03b-f65e-42c1-a8ed-6bebb7c6751b');
+    // Load demo user profile
+    loadUserProfile();
   }, []);
 
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = async () => {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      // Demo user data - replace with actual API call when Supabase is configured
+      const demoUser: UserProfile = {
+        id: 'demo-user-123',
+        username: 'admin',
+        display_name: 'Hotel Administrator',
+        guest_type: 'staff',
+        room_number: 'Admin Office',
+        current_location_address: 'The Peninsula Hong Kong, Salisbury Road',
+        current_location_city: 'Hong Kong',
+        loyalty_points: 9999
+      };
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      
-      setUser(data);
+      setUser(demoUser);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -161,7 +158,20 @@ export default function Dashboard() {
               </svg>
               Current Location
             </h2>
-            <UserLocationDisplay userId={user.id} />
+            <div className="space-y-3">
+              <div>
+                <div className="text-sm text-gray-500">Address</div>
+                <div className="font-medium">{user.current_location_address}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-500">City</div>
+                <div className="font-medium">{user.current_location_city}</div>
+              </div>
+              <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                <div className="text-sm text-green-600 font-medium">📍 Location Status: Active</div>
+                <div className="text-xs text-green-500">GPS tracking enabled</div>
+              </div>
+            </div>
           </div>
         </div>
 

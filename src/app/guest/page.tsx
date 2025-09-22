@@ -230,7 +230,25 @@ export default function GuestInterface() {
     setIsProcessing(true);
     
     try {
-      // Build comprehensive database-driven AI instructions
+      // Get fresh weather data for context
+      let currentWeather = weather;
+      try {
+        const weatherResponse = await fetch(`/api/get-weather?location=${encodeURIComponent('Hong Kong')}`);
+        const weatherResult = await weatherResponse.json();
+        if (weatherResult?.success && weatherResult.weather) {
+          currentWeather = {
+            temp: Math.round(weatherResult.weather.temp),
+            condition: weatherResult.weather.condition,
+            humidity: weatherResult.weather.humidity
+          };
+          // Update local weather state too
+          setWeather(currentWeather);
+        }
+      } catch (weatherError) {
+        console.warn('Could not fetch fresh weather for voice context:', weatherError);
+      }
+
+      // Build comprehensive database-driven AI instructions with real-time weather
       const comprehensiveInstructions = `
 You are an AI designed for The Peninsula Hong Kong to assist guests with every request they might have.
 
@@ -291,8 +309,11 @@ WHY ROOM NUMBER MATTERS: Room number determines which devices you can control, w
 Current Location: ${selectedGuest?.stayInfo?.location}
 WHY LOCATION MATTERS: Current location enables Hong Kong-specific recommendations for restaurants, attractions, transportation, and activities based on proximity to guest's current position in the city.
 
-Current Hong Kong Weather: ${weather.temp}°C ${weather.condition}, ${weather.humidity}% humidity
-WHY WEATHER MATTERS: Weather context enables appropriate activity suggestions, clothing recommendations, and indoor/outdoor service offerings based on current conditions.
+REAL-TIME HONG KONG WEATHER CONTEXT:
+Current Weather: ${currentWeather.temp}°C, ${currentWeather.condition}, ${currentWeather.humidity}% humidity
+Weather Source: Google Maps API via server proxy (updated at session start)
+Weather Recommendations: ${currentWeather.temp > 25 ? 'Perfect weather for outdoor activities like visiting Victoria Peak, taking the Star Ferry, or exploring outdoor markets. Suggest light clothing and staying hydrated.' : currentWeather.temp < 18 ? 'Cool weather ideal for indoor activities like shopping in IFC Mall, visiting museums, or enjoying warm meals. Suggest bringing a light jacket for outdoor activities.' : 'Pleasant weather suitable for both indoor and outdoor activities. Great for walking around Tsim Sha Tsui, visiting parks, or enjoying rooftop dining.'}
+WHY WEATHER MATTERS: Real-time weather enables precise activity suggestions, clothing recommendations, and indoor/outdoor service offerings. Always reference current conditions when making recommendations.
 
 ROOM ${selectedGuest?.stayInfo?.room} DEVICE CONTROL SYSTEM:
 

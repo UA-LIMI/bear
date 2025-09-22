@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { RealtimeAgent, RealtimeSession } from '@openai/agents-realtime';
 import { 
@@ -51,7 +51,39 @@ export function ChatInterface({ selectedGuest, weather, uiTextContent, onAddMess
   const [voiceConnected, setVoiceConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [voiceProcessing, setVoiceProcessing] = useState(false);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicrophone, setSelectedMicrophone] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Enumerate audio devices on component mount
+  useEffect(() => {
+    getConnectedAudioDevices();
+    
+    // Listen for device changes
+    navigator.mediaDevices.addEventListener('devicechange', getConnectedAudioDevices);
+    
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', getConnectedAudioDevices);
+    };
+  }, []);
+
+  // Get available audio input devices
+  const getConnectedAudioDevices = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(device => device.kind === 'audioinput');
+      setAudioDevices(audioInputs);
+      
+      // Auto-select default device if none selected
+      if (!selectedMicrophone && audioInputs.length > 0) {
+        setSelectedMicrophone(audioInputs[0].deviceId);
+      }
+      
+      console.log('📱 Audio devices found:', audioInputs.length);
+    } catch (error) {
+      console.error('Error enumerating audio devices:', error);
+    }
+  };
 
   const addMessage = (content: string, role: 'user' | 'ai') => {
     const newMessage: AIMessage = {
@@ -184,16 +216,23 @@ Provide helpful, concise assistance based on current weather and guest preferenc
 
       const { ephemeralKey } = await response.json();
       
-      // Enhanced audio constraints for better call quality
+      // Professional WebRTC audio constraints following best practices
       const audioConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 24000,
-          channelCount: 1,
-          latency: 0.01, // Low latency for real-time
-          volume: 1.0
+          sampleRate: { ideal: 24000, min: 16000 },
+          channelCount: { ideal: 1 },
+          latency: { ideal: 0.01, max: 0.05 },
+          volume: { ideal: 1.0 },
+          // Advanced constraints for better quality
+          googEchoCancellation: true,
+          googAutoGainControl: true,
+          googNoiseSuppression: true,
+          googHighpassFilter: true,
+          googTypingNoiseDetection: true,
+          googAudioMirroring: false
         }
       };
 
@@ -203,7 +242,25 @@ Provide helpful, concise assistance based on current weather and guest preferenc
       });
 
       const voiceSession = new RealtimeSession(agent);
-      const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+      
+      // Use specific microphone if selected, otherwise default
+      const finalConstraints = selectedMicrophone ? {
+        audio: {
+          ...audioConstraints.audio,
+          deviceId: { exact: selectedMicrophone }
+        }
+      } : audioConstraints;
+      
+      const stream = await navigator.mediaDevices.getUserMedia(finalConstraints);
+      
+      // Log audio track settings for debugging
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        const settings = audioTrack.getSettings();
+        console.log('🎤 Audio track settings:', settings);
+        console.log('📊 Audio constraints applied:', audioTrack.getConstraints());
+      }
+      
       setAudioStream(stream);
 
       // Connect with enhanced audio settings
@@ -438,7 +495,10 @@ Provide helpful, concise assistance based on current weather and guest preferenc
                   {voiceConnected ? (uiTextContent.voice_connected || 'Voice Connected to LIMI AI') : (uiTextContent.voice_disconnected || 'Voice Disconnected')}
                 </p>
                 <p className="text-[#f3ebe2]/60 text-xs">
-                  {voiceConnected ? `Room ${selectedGuest.stayInfo?.room} controls • Enhanced audio quality` : 'Click microphone for voice chat with noise cancellation'}
+                  {voiceConnected ? 
+                    `Room ${selectedGuest.stayInfo?.room} controls • HD Audio ${audioDevices.length > 0 ? `• ${audioDevices.length} mics available` : ''}` : 
+                    'Click microphone for voice chat with noise cancellation'
+                  }
                 </p>
               </div>
               
@@ -464,13 +524,30 @@ Provide helpful, concise assistance based on current weather and guest preferenc
                     </div>
                   )}
                   
+                  {/* Microphone selector */}
+                  {audioDevices.length > 1 && !voiceConnected && (
+                    <select
+                      value={selectedMicrophone}
+                      onChange={(e) => setSelectedMicrophone(e.target.value)}
+                      className="text-xs bg-white/10 text-[#f3ebe2] border border-white/20 rounded px-2 py-1"
+                    >
+                      {audioDevices.map(device => (
+                        <option key={device.deviceId} value={device.deviceId}>
+                          {device.label || `Microphone ${device.deviceId.slice(0, 8)}`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  
                   {/* Session status */}
-                  <div className="text-xs text-green-300 ml-2">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                      <span>HD Audio</span>
+                  {voiceConnected && (
+                    <div className="text-xs text-green-300 ml-2">
+                      <div className="flex items-center space-x-1">
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                        <span>HD Audio</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

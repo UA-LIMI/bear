@@ -107,9 +107,18 @@ export function AIModule({ selectedGuest, onAddMessage }: AIModuleProps) {
                     <ConnectButton
                       onConnect={async () => {
                         onAddMessage?.(`Connecting to LIMI AI...`, 'ai');
-                        if (handleConnect) {
-                          await handleConnect();
-                          onAddMessage?.(`Voice connected! Hello ${selectedGuest.name}, I'm your AI assistant.`, 'ai');
+                        try {
+                          if (handleConnect) {
+                            await handleConnect();
+                            // Only show success message if actually connected
+                            if (client?.connected) {
+                              onAddMessage?.(`Voice connected! Hello ${selectedGuest.name}, I'm your AI assistant.`, 'ai');
+                            } else {
+                              onAddMessage?.(`Connection failed. WebRTC endpoint not available. Please try again later.`, 'ai');
+                            }
+                          }
+                        } catch (error) {
+                          onAddMessage?.(`Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'ai');
                         }
                       }}
                       onDisconnect={async () => {}}

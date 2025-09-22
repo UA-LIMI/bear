@@ -11,7 +11,7 @@ import { GuestLayout } from '@/components/guest/GuestLayout';
 import { RoomControls } from '@/components/guest/RoomControls';
 import { GuestInfoPanel } from '@/components/guest/GuestInfoPanel';
 import { ChatInterface } from '@/components/ChatInterface';
-import { VoiceInterface } from '@/components/VoiceInterface';
+import { ProfessionalVoiceInterface } from '@/components/ProfessionalVoiceInterface';
 
 interface GuestProfile {
   id: string;
@@ -302,7 +302,7 @@ export default function GuestInterface() {
         />
       }
       bottomPanel={
-        <VoiceInterface
+        <ProfessionalVoiceInterface
           selectedGuest={selectedGuest}
           weather={weather}
           uiTextContent={uiTextContent}

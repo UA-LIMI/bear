@@ -36,6 +36,13 @@ export async function GET(request: Request) {
     let weatherData;
     try {
       weatherData = JSON.parse(responseText);
+      
+      // Check if response contains an error
+      if (weatherData.error) {
+        console.error('Google Weather API error:', weatherData.error);
+        throw new Error(`Google Weather API error: ${weatherData.error.message} (${weatherData.error.code})`);
+      }
+      
     } catch (parseError) {
       console.error('Failed to parse weather response:', parseError, 'Response:', responseText);
       throw new Error(`Invalid JSON response from Google Weather API: ${responseText.slice(0, 100)}`);

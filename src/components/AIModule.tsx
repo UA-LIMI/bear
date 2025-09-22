@@ -129,29 +129,26 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
         console.warn('Could not fetch fresh weather for voice context:', weatherError);
       }
 
-      // Build comprehensive AI instructions with real-time weather (WORKING VERSION)
-      const comprehensiveInstructions = `
-You are LIMI AI for The Peninsula Hong Kong. Current guest: ${selectedGuest.name} (${selectedGuest.profile.occupation}) in Room ${selectedGuest.stayInfo?.room}.
+      // Optimized AI instructions for better performance and quality
+      const optimizedInstructions = `You are LIMI AI for The Peninsula Hong Kong.
 
-REAL-TIME CONTEXT:
-- Weather: ${currentWeather.temp}°C, ${currentWeather.condition}, ${currentWeather.humidity}% humidity (${currentWeather.isLive ? 'live data' : 'fallback'})
-- Location: ${selectedGuest.stayInfo?.location}
-- Membership: ${selectedGuest.membershipTier} (${selectedGuest.loyaltyPoints} points)
+Guest: ${selectedGuest.name} (${selectedGuest.profile.occupation}) in Room ${selectedGuest.stayInfo?.room}
+Membership: ${selectedGuest.membershipTier} (${selectedGuest.loyaltyPoints} points)
+Weather: ${currentWeather.temp}°C ${currentWeather.condition}
+Location: ${selectedGuest.stayInfo?.location}
 
-VOICE INTERACTION RULES:
-1. Keep responses under 30 words for natural conversation flow
-2. Always confirm before room changes: "Should I turn on romantic lighting?"
-3. Use guest name and room number for personalization
-4. Stop immediately if interrupted - respond with "Yes, what can I help with?"
-5. Reference current weather for activity suggestions
+VOICE RULES:
+1. Keep responses under 25 words
+2. Always confirm room changes
+3. Use guest name
+4. Stop if interrupted
 
-AVAILABLE ROOM CONTROLS:
-- Lighting: FX=88 (romantic candle), #FFFFFF (work light), OFF (turn off)
-- Temperature: Ask preferred setting before adjusting
-- Services: Room service, concierge, transportation
+CONTROLS:
+- Lighting: FX=88 (romantic), #FFFFFF (work), OFF
+- Temperature: Ask before adjusting
+- Services: Room service, concierge, transport
 
-Provide helpful, concise assistance based on current weather and guest preferences.
-      `.trim();
+Be helpful and concise.`.trim();
       
       // Use WORKING client-secret endpoint (not broken WebRTC)
       const response = await fetch('/api/client-secret', {
@@ -201,9 +198,10 @@ Provide helpful, concise assistance based on current weather and guest preferenc
         }
       };
 
+      // Create RealtimeAgent with optimized instructions
       const agent = new RealtimeAgent({
         name: 'LIMI AI Assistant',
-        instructions: comprehensiveInstructions
+        instructions: optimizedInstructions
       });
 
       const voiceSession = new RealtimeSession(agent);
@@ -224,17 +222,22 @@ Provide helpful, concise assistance based on current weather and guest preferenc
       
       setAudioStream(stream);
 
-      // Set audio output device if supported
+      await voiceSession.connect({ apiKey: ephemeralKey });
+      
+      // Configure audio output device after connection
       if (selectedSpeaker && 'setSinkId' in HTMLAudioElement.prototype) {
         try {
-          // This will be used when audio comes from the AI
-          console.log('🔊 Setting audio output device:', selectedSpeaker);
+          // Create audio element for AI voice output
+          const audioElement = document.createElement('audio');
+          audioElement.autoplay = true;
+          if ('setSinkId' in audioElement) {
+            await (audioElement as any).setSinkId(selectedSpeaker);
+            console.log('🔊 Audio output device set:', selectedSpeaker);
+          }
         } catch (error) {
           console.warn('⚠️ Could not set audio output device:', error);
         }
       }
-
-      await voiceSession.connect({ apiKey: ephemeralKey });
       
       setSession(voiceSession);
       setVoiceConnected(true);

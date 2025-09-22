@@ -1,0 +1,592 @@
+# Product Requirements Document (PRD): LIMI AI Guest Experience v2
+
+**Version:** 3.0
+**Status:** DRAFT
+
+## 1. Guiding Principles (NEW)
+
+- **Modularity First:** Every component, service, and piece of logic MUST be built as a self-contained, swappable module. The system must be architected to allow features to be added, removed, or replaced without breaking the entire application.
+- **No Hardcoded Logic:** All user-facing content, UI configurations, and business rules should be driven by the database. The frontend application should be a "dumb" renderer of data and configuration provided by the backend.
+- **AI-Centric, Not AI-Generated:** The UI must be professional, modern, and feel human-designed. Emojis, generic icons, and other elements that make an interface feel "AI-generated" are strictly forbidden.
+
+## 2. Architectural Overview
+
+### 2.1. System Architecture: Backend-for-Frontend (BFF)
+
+1.  **Vercel Frontend & BFF:** A Next.js application serves the UI and a "serverless backend" (API Routes) that handles all client-facing logic.
+2.  **Dedicated VPS Backend:** A stateful Node.js/Express server (Docker on VPS) handles tasks requiring persistence (database pools, IoT connections, event bus).
+
+### 2.2. Environment & Secrets Management
+
+- **No Hardcoded Secrets:** No API keys, passwords, or other secrets will ever be hardcoded in the source code.
+- **Platform-Specific Variables:** All secrets MUST be stored as environment variables on their respective hosting platforms.
+    - **Vercel Backend:** Manages all keys for frontend-related services (`OPENAI_API_KEY`, `AI_GATEWAY_API_KEY`, `SUPABASE_URL`, etc.) via Vercel's Environment Variables.
+    - **VPS Backend:** Manages its own secrets via a `.env` file.
+- **The Ephemeral Key Principle:** The only key ever sent to the browser is the short-lived `ephemeralKey` for voice sessions.
+
+### 2.3. IoT & Real-time State Management (NEW)
+
+- **Database as Source of Truth:** The Supabase database is the single source of truth for the state of all IoT devices (e.g., a light is "on").
+- **Flow:**
+    1. The frontend calls a Vercel API route to change a device's state.
+    2. The Vercel API route updates the desired state in the database.
+    3. A stateful service on the dedicated VPS backend listens for database changes and sends the corresponding command to the MQTT broker.
+    4. A separate listener service on the VPS subscribes to MQTT topics for state updates from the devices themselves, updating the database with the ground truth.
+    5. The frontend subscribes to real-time database updates (e.g., via Supabase Realtime) to reflect the current state without needing to poll.
+
+### 2.4. Real-time Event Bus (for Staff Dashboard)
+
+- A stateful "Event Bus" service (e.g., Redis Pub/Sub) will run on the dedicated VPS backend to facilitate real-time communication between the guest and staff applications.
+
+### 2.5. Current Database Schema
+
+- The system will be built on the existing Supabase schema, which includes tables for `profiles`, `guest_entities` (for context), `conversation_sessions`, and more.
+- **Reference:** The complete schema is defined in `database/scripts/database-schema.sql`.
+
+## 3. The "Guest v2" Frontend Application
+
+### 3.1. Foundational Requirements
+
+- **New Page Route:** `/guest-v2`, with a link added to the main homepage.
+- **Component-Based Design:** Built from scratch using small, single-responsibility React components.
+- **Secure API Layer:** All backend communication MUST go through Next.js API Routes.
+
+### 3.2. User Interface & Experience (UI/UX)
+
+- **Bento Box Layout:** The UI will be organized in a modern, modular "bento box" grid. Components will be visually distinct, slightly transparent, and have a "floaty" aesthetic.
+- **Waveform Visualization:** The UI MUST display a live waveform visualization when the user is speaking and a distinct visualization when the AI is speaking.
+- **Mute Functionality:** Standard mute/unmute controls for the voice session are required.
+- **Guest UI Customization:** Guests must have the ability to rearrange, hide, or show different UI components (widgets) on their dashboard. This configuration will be saved to their profile in the database.
+- **Dynamic Contextual Widgets:** UI components like an "Urgent Event" banner or a "Taxi Tracker" will only appear when their context is relevant (i.e., there is an urgent event, or a taxi has been ordered).
+
+### 3.3. The Conversational Experience
+
+- **Unified AI Backend:** The same AI service and model MUST be used for both text and voice chat to ensure a consistent personality and set of capabilities.
+- **Unified Conversation Transcript:** All interactions, whether via text or voice, MUST appear in a single, continuous chat log UI.
+- **Persistent Session Context:** The context for the AI (for both text and voice) must build up over the course of a session, allowing for follow-up questions and more natural conversation.
+- **Modular Agent Design:** The chat component MUST be architected in a modular way that allows the underlying AI service (currently OpenAI Real-time API) to be swapped out for a different implementation (e.g., a custom STT -> LLM -> TTS pipeline) in the future.
+
+### 3.4. Generative UI & AI Tooling
+
+- **Massively Expansive Generative UI:** The AI must have access to a rich set of tools to generate any UI component needed to present complex information.
+- **Web View Component:** The AI must have a tool that allows it to display a web page or a piece of HTML content within the chat interface.
+- **Component Lab / Storybook:** A separate, internal page will be created to render and test every available component from `ucaf`, `ai-elements`, and our custom library. This allows for rapid visualization and testing outside of the main application.
+
+### 3.5. Rebuilding Existing Functionality
+
+- **User & Context System:** The Guest Profile Selection screen and the logic for fetching guest data will be rebuilt.
+- **IoT Lighting Controls:** A UI panel for lighting controls will be rebuilt, following the abstraction principle defined in section 2.3.
+- **Real-time Voice Integration:** The existing voice system will be integrated into the new UI.
+
+## 4. Hotel Staff Dashboard & Actionable Insights (NEW)
+
+A second, separate frontend application will be developed for hotel staff. This dashboard will provide real-time visibility into guest requests originating from the AI.
+
+- **Requirements:**
+    - **Real-time Request Feed:** The dashboard will display a live feed of actionable requests from guests as they happen (e.g., "Guest in Room 401 requested a taxi to the airport").
+    - **Request Lifecycle Management:** Staff must be able to acknowledge, process, and complete requests from the dashboard interface.
+    - **Integration with Existing Codebase:** The pre-built dashboard application will be integrated into the project and connected to the Real-time Event Bus.
+- **Backend Responsibility:**
+    - **Transcript Analysis:** The dedicated VPS backend will be responsible for monitoring AI conversation transcripts.
+    - **Actionable Event Publishing:** The backend will identify actionable intents and publish structured event data to the Real-time Event Bus.
+
+## 5. Non-Functional Requirements
+
+- **Security:** Zero API keys or secrets exposed on the client-side.
+- **Performance:** Must be significantly faster and more responsive than the original.
+- **Maintainability:** The final code must be modular, well-documented, and easy to extend.
+
+## 6. Development Workflow & AI Agent Protocol (NEW)
+
+### 6.1. Code Quality & Style
+
+- **No Comments (Principle of Self-Documenting Code):** Code should be written so clearly that it does not require comments. Verbose, AI-generated comments with emojis are strictly forbidden. Comments should only be used as a last resort for explaining exceptionally complex or non-obvious algorithms.
+- **README per Module:** Every significant file, component, or module MUST have a corresponding `README.md` file explaining its purpose, props/API, and usage.
+- **Justify Decisions with Evidence:** The AI agent must be able to justify its technical decisions by referencing external documentation, GitHub repositories, or established best-practice articles. It should never simply state "this is the standard way." The goal is to improve upon existing patterns, not just copy them.
+
+### 6.2. Asset Management
+
+- **Local Assets Only:** All static assets (images, fonts, etc.) MUST be downloaded and stored locally within the project repository. No hotlinking from external websites.
+- **User Approval for Assets:** The AI must get explicit user approval before adding new assets like background images to the project.
+- **Image Placeholders:** Components that require images must use placeholders, with a clear and simple system for linking them to the final assets.
+- **Image Hosting Strategy:** If Vercel's static hosting is insufficient, images will be served from a dedicated Docker container on the VPS backend.
+
+## 7. Project Roadmap (NEW)
+
+1.  **Phase 1: Guest v2 Rebuild:** Implement all features defined in section 3.
+2.  **Phase 2: Dashboard Integration:** Integrate the pre-built hotel staff dashboard and connect it to the event bus.
+3.  **Phase 3: Authentication System:** Replace the user selection dropdown with a full-fledged, secure guest login system.
+
+## 8. Current System State & Analysis
+
+### 8.1 Repository Overview (What Exists Today)
+- **Frontend (Next.js App Router, Vercel-hosted)**
+  - Primary guest UI at `src/app/guest/page.tsx` (monolithic, >1,200 lines)
+  - Serverless API routes under `src/app/api/*` (BFF layer)
+- **Dedicated VPS Backend (Express + Docker)**
+  - App entrypoints: `backend/src/index.js`, `backend/src/app.js`
+  - Routes: `backend/src/routes/*` (`openai.js`, `aiProxy.js`, `health.js`, `test.js`)
+  - Config: `backend/src/config/env.js` (loads `.env`, validates required keys)
+- **Database (Supabase/Postgres)**
+  - Core schema: `database/scripts/database-schema.sql`
+  - UI content system: `database/migrations/20250918000001_ui_content_system.sql`
+  - Additional migrations and seed data: `database/migrations/*`
+- **Cloned reference apps** (for research and examples, not production): `clone_repos/gemini-chatbot-repo`, `clone_repos/voice-chat`
+
+### 8.2 Current Frontend: `/guest` Page
+- **File:** `src/app/guest/page.tsx`
+- **Purpose:** Guest-facing SPA for The Peninsula Hong Kong with voice, text chat, weather, events, room controls, and profile selection.
+- **Key UI/Data Flows:**
+  - Guest selection pulls from DB via `GET /api/get-guests`.
+  - Weather uses `NEXT_PUBLIC_WEATHER_API_KEY` on the client for OpenWeatherMap.
+  - Events pulled via `GET /api/get-hotel-events`.
+  - Dynamic UI configuration loaded via `POST /api/get-ui-config` (db-driven components, text, layout).
+  - Voice session created via `POST /api/client-secret` (proxied to VPS backend to get OpenAI `ephemeralKey`), then `@openai/agents-realtime` `RealtimeSession` connects using that key.
+  - Lighting controls call `POST /api/control-lighting` which publishes directly to MQTT.
+  - Text chat currently calls Vercel AI Gateway directly from the browser using `NEXT_PUBLIC_AI_GATEWAY_API_KEY`.
+- **Security Risks / Implementation Issues:**
+  - Text chat path exposes a public API key in the browser and directly calls `https://ai-gateway.vercel.sh/v1/chat/completions`. This must be replaced with a server-side API route proxy.
+  - MQTT is controlled from a Vercel serverless function; there is no DB source-of-truth update nor a stateful VPS IoT bridge in the current path.
+  - Weather key is intentionally public but may be rate-limited; usage patterns should be throttled/cached server-side.
+  - Realtime voice flows rely on ephemeral keys correctly, but disconnect handling and reconnection resilience need auditing (see §8.6 and related tasks).
+
+### 8.3 Current Next.js API Routes (Vercel BFF Layer)
+- `src/app/api/client-secret/route.ts`
+  - Proxies `POST` requests to VPS: `http://145.79.10.35:3001/api/client-secret`
+  - Returns `{ ephemeralKey, ... }` for the client to establish Realtime voice sessions
+- `src/app/api/control-lighting/route.ts`
+  - Accepts `{ room, command, userId }`
+  - Connects to MQTT broker using `MQTT_BROKER_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`
+  - Publishes command to topic equal to `room`
+  - Runs entirely on Vercel, bypassing the VPS backend and any DB state
+- `src/app/api/get-ui-config/route.ts`
+  - Server-side Supabase client using `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_KEY`
+  - Returns: `components`, `textContent`, `layoutConfig` from tables: `user_component_assignments`, `ui_text_content`, `layout_configurations`
+- `src/app/api/get-guests/route.ts`
+  - Reads `profiles` table and returns guest listings for selection UI
+- `src/app/api/get-hotel-events/route.ts`
+  - Reads `hotel_events` table; `active = true`; returns event list
+- Additional endpoints present: `memory-mcp`, `test-db`, `test-mcp`, `test-supabase`, and `hotel-agent/` (stubs or utilities for testing/integration)
+
+### 8.4 Current Dedicated VPS Backend
+- **Entrypoints:**
+  - `backend/src/index.js`: loads config, logs config, starts Express server, handles graceful shutdown, uncaught exceptions, unhandled rejections
+  - `backend/src/app.js`: core middleware, CORS/Helmet, request IDs, rate limiting, error handling, and route mounting
+- **Config:** `backend/src/config/env.js`
+  - Loads `.env`, validates required keys: `OPENAI_API_KEY`, `AI_GATEWAY_API_KEY`
+  - Derived config: `PORT`, `FRONTEND_URL` (CORS allowlist), `VERCEL_AI_GATEWAY_URL`, rate-limit window/max, log level/format, secrets
+- **Routes:**
+  - `backend/src/routes/openai.js`
+    - `POST /api/client-secret`: Generates OpenAI Realtime `client_secret` (ephemeral key), with validation, logging, and optional caching
+    - `GET /api/client-secret/health`: Health of OpenAI connectivity
+    - `GET /api/client-secret/stats`: Service stats and token cache info
+  - `backend/src/routes/aiProxy.js`
+    - `POST /api/ai-proxy`: Proxies text requests to Vercel AI Gateway via server-side gateway client with retry/backoff
+  - `backend/src/routes/health.js`
+    - `GET /healthz`: liveness
+    - `GET /healthz/keys`: verifies presence of API keys
+    - `GET /readyz`: readiness checks (env, memory, key format)
+    - `GET /live`: minimal liveness
+    - `GET /status`: detailed status (config, memory, env checks, process info)
+- **Middleware:** `middleware/logger`, `middleware/validation`, `middleware/rateLimiter` (applied globally and per-route where noted)
+
+### 8.5 Current Database Schema (Supabase/Postgres)
+- **Core Guest/Agent Context (database/scripts/database-schema.sql):**
+  - `profiles`: extends `auth.users`, holds guest identity and room details, loyalty, etc.
+  - `agent_types`, `agent_executions`: registry and logs for multi-agent operations
+  - `guest_entities`, `guest_relations`: graph of guest-related facts and relationships
+  - `guest_summaries`, `guest_patterns`, `guest_recommendations`, `guest_research`: derived insights and personalized outputs
+  - `conversation_sessions`, `conversation_interactions`: transcript/session tracking for voice/text
+  - RLS policies across all major tables for user-scoped access
+- **UI Content System (database/migrations/20250918000001_ui_content_system.sql):**
+  - `ui_components`: registry of renderable widgets (weather, events, room controls, etc.)
+  - `user_component_assignments`: per-user component visibility, priority, position, configuration
+  - `ui_text_content`: localized copy keyed by `text_key` and `context`
+  - `hotel_services`: structured list of services, icons, availability
+  - `layout_configurations`: layout per `guest_type` and `screen_size`
+  - Seed inserts for initial Hong Kong guests and default UI content
+
+### 8.6 IoT/MQTT Behavior (Today vs Ideal)
+- **Today:**
+  - Vercel API route `POST /api/control-lighting` connects to MQTT broker and publishes commands directly
+  - No DB state mutation prior to device command, no device feedback listener updating DB ground truth
+  - Access control: rudimentary check on `userId` vs `room` in the route
+- **Ideal (Target Architecture, see §2.3):**
+  - Frontend writes desired state to DB; a stateful service on VPS translates DB changes to MQTT commands
+  - A separate MQTT listener updates DB when devices report actual state
+  - Frontend listens to DB realtime updates to reflect truth state
+
+### 8.7 Secrets & Key Management (Current Usage)
+- **Frontend (browser)**
+  - `NEXT_PUBLIC_WEATHER_API_KEY`: intentionally public; consider caching/throttling to avoid rate limits
+  - `NEXT_PUBLIC_AI_GATEWAY_API_KEY`: currently used in client-side text chat call (must be removed/migrated)
+- **Next.js API Routes (server-side only)**
+  - `SUPABASE_SERVICE_KEY`, `NEXT_PUBLIC_SUPABASE_URL` used server-side in API routes; the service key is not exposed to the client
+  - `MQTT_BROKER_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD` used to connect and publish
+- **VPS Backend (.env)**
+  - `OPENAI_API_KEY`, `AI_GATEWAY_API_KEY`, plus derived config; validated at startup
+
+### 8.8 What Works vs What’s Broken (Current Operational Snapshot)
+- **Works**
+  - Guest selection via `GET /api/get-guests` (DB-backed)
+  - Hotel events via `GET /api/get-hotel-events` (DB-backed)
+  - UI configuration via `POST /api/get-ui-config` (DB-backed components/text/layout)
+  - OpenAI Realtime ephemeral key flow via `POST /api/client-secret` (Vercel proxy -> VPS -> OpenAI)
+  - Basic lighting publish via `POST /api/control-lighting` (direct MQTT)
+- **Broken / Insecure / Needs Refactor**
+  - Client-side text chat uses `NEXT_PUBLIC_AI_GATEWAY_API_KEY` directly; must replace with secure API route calling VPS `POST /api/ai-proxy` (or a Vercel BFF proxy)
+  - IoT flow bypasses DB as source of truth and lacks device feedback reconciliation via VPS listener
+  - Realtime session lifecycle edge cases (mute/unmute state sync, disconnect/reconnect) need hardening per pending tasks
+- **Unknown/To Verify**
+  - VPS `/status` and health endpoints are implemented; verify external reachability and correctness in deployment
+
+### 8.9 File Index & Traceability (Feature → Files)
+- **Voice (OpenAI Realtime)**
+  - Frontend: `src/app/guest/page.tsx` (`connectVoice`, `disconnectVoice`)
+  - Vercel BFF: `src/app/api/client-secret/route.ts`
+  - VPS: `backend/src/routes/openai.js`
+- **Text Chat (Vercel AI Gateway)**
+  - Frontend: `src/app/guest/page.tsx` (`sendMessage`)
+  - VPS Proxy: `backend/src/routes/aiProxy.js`
+  - Target BFF Route (to add): `src/app/api/chat/route.ts` (secure proxy → VPS)
+- **IoT Lighting (MQTT)**
+  - Frontend UI: `src/app/guest/page.tsx` (`renderRoomControls` usage)
+  - Vercel BFF (today): `src/app/api/control-lighting/route.ts`
+  - Target VPS services: MQTT command publisher + device state listener (to be implemented)
+- **DB-Driven UI**
+  - Routes: `src/app/api/get-ui-config/route.ts`, `src/app/api/get-guests/route.ts`, `src/app/api/get-hotel-events/route.ts`
+  - Schema: `database/scripts/database-schema.sql`, `database/migrations/20250918000001_ui_content_system.sql`
+- **Health & Ops**
+  - VPS Health: `backend/src/routes/health.js`
+  - Server bootstrap/config: `backend/src/index.js`, `backend/src/app.js`, `backend/src/config/env.js`
+
+### 8.10 Research & Verification Methodology (For All Future Work)
+- **Primary Sources (in-repo):**
+  - Frontend entry and critical flows in `src/app/guest/page.tsx`
+  - Vercel API routes in `src/app/api/*`
+  - VPS routes in `backend/src/routes/*` and config in `backend/src/config/*`
+  - Database DDL in `database/scripts/*.sql` and `database/migrations/*.sql`
+- **Live Checks (non-destructive):**
+  - Vercel BFF: hit `/api/client-secret` with a test payload; expect `{ ephemeralKey }`
+  - VPS: `/healthz`, `/readyz`, `/status`, `/api/client-secret/health`
+  - DB connectivity: `/api/test-supabase` or add minimal ad-hoc check endpoint if needed
+- **Security Validation:**
+  - Ensure zero browser-side usage of sensitive keys (replace client text chat path)
+  - Confirm CORS allowlist on VPS (`FRONTEND_URL`) matches deployed origins
+  - Validate rate limiter policies per route class (general vs AI-specific)
+- **IoT Validation:**
+  - Replace direct publish with DB-mediated state flow; verify device state echo-back path to DB
+  - Add idempotency and audit logs for device commands
+- **Generative UI Readiness:**
+  - Confirm `ai` (Vercel AI SDK) is installed/working and plan component registry mapping for tool → component rendering
+  - Evaluate `ai-elements` and `ucaf` compatibility with React 18 (already addressed) and introduce behind a lab page first
+
+### 8.11 Known Gaps → Tasks Mapping (High-Level)
+- Secure Chat API Route (BFF) → replace client direct call (Task: Create secure chat API route)
+- Build new chat with Vercel AI SDK (Generative UI) (Task: Build new chat component)
+- Integrate new component into `guest-v2` page (Task: Integrate new component)
+- Remove old `sendMessage` logic and state (Task: Remove old logic)
+- Migrate IoT to DB→VPS→MQTT pattern with device state reconciliation
+- Harden OpenAI Realtime lifecycle (connect/disconnect/mute)
+- Prepare Staff Dashboard event bus publishing path (transcript → actionable → publish)
+
+### 8.12 Summary of Current-State Principles
+- The project already follows a hybrid model: Vercel BFF for edge-facing work and VPS for stateful/privileged operations.
+- Several pieces are correctly in place (ephemeral key issuance, DB-driven UI scaffolding, health routes), but key flows (text chat, IoT state) must be refactored to align with security and reliability standards.
+
+### 8.13 Frontend Deep Dive: `src/app/guest/page.tsx`
+- **File:** [page.tsx](mdc:src/app/guest/page.tsx)
+- **Primary Responsibilities:** Guest selection, weather/events display, dynamic UI registry, text chat, voice session, room controls.
+- **State:** `selectedGuest`, `showUserDropdown`, `messages`, `loading`, `profiles`, `inputText`, `session`, `audioStream`, `isProcessing`, `voiceConnected`, `isMuted`, `weather`, `hotelEvents`, `uiComponents`, `uiTextContent`, `layoutConfiguration`, `messagesEndRef`.
+- **Initialization:** On mount, calls `loadGuestProfiles()`, `loadWeather()`, `loadEvents()`, `loadUIConfiguration()`.
+- **loadUIConfiguration():**
+  - Defaults when no guest is selected (text content and component registry set in-memory).
+  - Else POST to [get-ui-config route](mdc:src/app/api/get-ui-config/route.ts) with `{ userId, guestType, screenSize }`.
+  - Sets `textContent`, `components`, `layoutConfig` from DB.
+- **loadWeather():**
+  - Fetches OpenWeatherMap using `NEXT_PUBLIC_WEATHER_API_KEY` and populates `weather`.
+  - Note: Public key; consider server-side caching/throttling.
+- **loadEvents():**
+  - GET [get-hotel-events](mdc:src/app/api/get-hotel-events/route.ts), maps rows to UI-friendly structure.
+- **loadGuestProfiles():**
+  - GET [get-guests](mdc:src/app/api/get-guests/route.ts) → maps DB rows to `GuestProfile` objects, sets loyalty/membership derivations.
+- **Voice: `connectVoice()`**
+  - Builds `comprehensiveInstructions` string with dynamic guest, weather, and WLED command catalog.
+  - POST [client-secret](mdc:src/app/api/client-secret/route.ts) with `{ sessionId, model, voice, instructions }`.
+  - Receives `{ ephemeralKey }`, constructs `RealtimeAgent` and `RealtimeSession`, gets mic stream, `connect({ apiKey: ephemeralKey })`, marks `voiceConnected`.
+  - `disconnectVoice()` closes session, stops mic tracks, clears state.
+- **Text Chat: `sendMessage()`**
+  - CURRENT: Calls `https://ai-gateway.vercel.sh/v1/chat/completions` with `Authorization: Bearer ${process.env.NEXT_PUBLIC_AI_GATEWAY_API_KEY}` and Anthropic model id.
+  - SECURITY RISK: Browser-side secret; must be replaced with server API route (see §8.14 and §8.18).
+  - Fallback path `generateContextualResponse()` crafts heuristic responses when errors occur.
+- **IoT Controls:**
+  - `renderRoomControls()` enumerates WLED commands and posts to [control-lighting](mdc:src/app/api/control-lighting/route.ts) → MQTT publish. Basic ABAC check present; no DB state update.
+- **Dynamic UI:**
+  - `shouldShowComponent(name)` + `getComponentPriority(name)` driven by DB-sourced `uiComponents`.
+  - Components: Weather, Events, Guest Profile, Location Info, Quick Services; ordering determined by priority.
+- **Key Risks:**
+  - Public AI key usage in `sendMessage()`; direct MQTT from Vercel; weather API public access patterns; partial lifecycle handling for voice session (mute/sync/reconnect).
+
+### 8.14 Next.js API Route Specifications (Vercel BFF)
+- **[client-secret/route.ts](mdc:src/app/api/client-secret/route.ts)**
+  - Method: POST
+  - Purpose: Proxy to VPS `POST /api/client-secret` for OpenAI Realtime ephemeral key
+  - Request: `{ sessionId?: string, model?: string, voice?: string, instructions?: string, capabilities?: string[] }`
+  - Response: `{ ephemeralKey: string, expiresAt?: number, sessionId?: string, model?: string }`
+  - Downstream: `http://145.79.10.35:3001/api/client-secret`
+- **[control-lighting/route.ts](mdc:src/app/api/control-lighting/route.ts)**
+  - Method: POST
+  - Purpose: Publish MQTT lighting command
+  - Request: `{ room: string, command: string, userId: string }`
+  - Response: `{ success: boolean, message?: string, error?: string }`
+  - Env: `MQTT_BROKER_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD`
+  - Notes: Direct MQTT publish from Vercel; bypasses DB; access control minimal
+- **[get-ui-config/route.ts](mdc:src/app/api/get-ui-config/route.ts)**
+  - Method: POST
+  - Purpose: Return DB-driven UI config (components, text, layout)
+  - Request: `{ userId: string, guestType?: string, screenSize?: 'mobile'|'tablet'|'desktop' }`
+  - Response: `{ success: true, components: Array<...>, textContent: Record<string,string>, layoutConfig: object|null }`
+  - Env: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (server-only)
+- **[get-guests/route.ts](mdc:src/app/api/get-guests/route.ts)**
+  - Method: GET
+  - Purpose: List profiles for selection
+  - Response: `{ success: true, guests: Array<...> }`
+- **[get-hotel-events/route.ts](mdc:src/app/api/get-hotel-events/route.ts)**
+  - Method: GET
+  - Purpose: List active hotel events
+  - Response: `{ success: true, events: Array<...> }`
+- Additional routes present for testing/integration: `memory-mcp`, `test-db`, `test-mcp`, `test-supabase`, `hotel-agent/` (to be integrated in v2 plan).
+
+### 8.15 VPS Backend Specifications (Express)
+- **Entrypoints:** [index.js](mdc:backend/src/index.js), [app.js](mdc:backend/src/app.js)
+  - Security: `helmet()` CSP tuned for WebRTC, `cors` with allowlist from `FRONTEND_URL`
+  - Observability: `morgan`, winston request/error loggers, request IDs
+  - Reliability: global/general rate limiter, centralized error handling, graceful shutdown
+- **Config:** [env.js](mdc:backend/src/config/env.js)
+  - Required: `OPENAI_API_KEY`, `AI_GATEWAY_API_KEY`
+  - Optional/Derived: `PORT`, `FRONTEND_URL`, `VERCEL_AI_GATEWAY_URL`, rate-limit window/max, log level/format, session/jwt secrets
+  - Validates presence; logs sanitized config; warns on default secrets in production
+- **Routes:**
+  - [openai.js](mdc:backend/src/routes/openai.js)
+    - `POST /api/client-secret`: validates request, generates OpenAI `client_secret` via service, logs, may cache
+    - `GET /api/client-secret/health`: OpenAI API health
+    - `GET /api/client-secret/stats`: token service stats
+  - [aiProxy.js](mdc:backend/src/routes/aiProxy.js)
+    - `POST /api/ai-proxy`: Validated body → `@ai-sdk/gateway` `generateText()` with retry/backoff; returns `{ data, finishReason, usage }`
+  - [health.js](mdc:backend/src/routes/health.js)
+    - `/healthz`, `/healthz/keys`, `/readyz`, `/live`, `/status` (detailed status)
+
+### 8.16 Environment Variables Inventory & Locations
+- **Vercel (Next.js):**
+  - `NEXT_PUBLIC_SUPABASE_URL` (public base URL)
+  - `SUPABASE_SERVICE_KEY` (server-only; never exposed)
+  - `NEXT_PUBLIC_WEATHER_API_KEY` (public; consider server cache)
+  - `MQTT_BROKER_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD` (server-only in API route)
+  - `NEXT_PUBLIC_AI_GATEWAY_API_KEY` (presently used client-side; MUST be removed)
+- **VPS Backend (.env):**
+  - `OPENAI_API_KEY`, `AI_GATEWAY_API_KEY`
+  - `PORT`, `FRONTEND_URL`, `VERCEL_AI_GATEWAY_URL`, `RATE_LIMIT_*`, `LOG_*`, `SESSION_SECRET`, `JWT_SECRET`
+- **Principle:** Only `ephemeralKey` ever reaches the browser.
+
+### 8.17 Live Endpoints & Hosts
+- **Vercel (frontend+BFF):** e.g., `https://bear-beige.vercel.app`
+  - BFF routes under `/api/*` (see §8.14)
+- **VPS Backend:** `http://145.79.10.35:3001`
+  - Health: `/healthz`, `/readyz`, `/status`
+  - AI: `/api/client-secret`, `/api/ai-proxy`
+
+### 8.18 Known Issues & Tech Debt (Current)
+- Client-side text chat exposes `NEXT_PUBLIC_AI_GATEWAY_API_KEY`; replace with secure API route calling VPS `/api/ai-proxy` (or Vercel proxy) and remove browser key.
+- IoT control path bypasses DB-as-source-of-truth; implement DB→VPS→MQTT and device feedback listener → DB.
+- Voice lifecycle hardening: consistent mute state, resilience on disconnects, background audio track cleanup.
+- CORS allowlist and rate-limit profiles should be revalidated for all new origins/routes.
+- Logging PII: ensure logs redact sensitive tokens and guest info where necessary.
+
+### 8.19 Generative UI References (for v2 Implementation)
+- Reference dynamic component mapping patterns from cloned repos:
+  - [components/custom/message.tsx](mdc:clone_repos/gemini-chatbot-repo/components/custom/message.tsx): `toolInvocations` → React components mapping
+  - [components/custom/chat.tsx](mdc:clone_repos/gemini-chatbot-repo/components/custom/chat.tsx): message loop with preview rendering
+- Plan: Introduce a Component Lab page to render/test `ucaf`, `ai-elements`, and custom components, then wire tool→component registry for chat.
+
+### 8.20 Audit Checklist (Run After Each Change Set)
+- No client-exposed secrets (`NEXT_PUBLIC_*` only when intended; never service keys).
+- All AI calls go through BFF/VPS; ephemeral voice only on client.
+- IoT actions write desired state to DB and reconcile device truth via listener.
+- Health endpoints green: Vercel `/api/*` working, VPS `/healthz`, `/readyz`, `/status` OK.
+- CORS allowlist matches deployed origins; rate limiting enabled per route class.
+- DB migrations applied; `ui_components`, `user_component_assignments`, `ui_text_content`, `layout_configurations` populated.
+
+### 8.21 AI Integrations Summary (Today)
+- **Voice:** OpenAI Realtime via `@openai/agents-realtime` with ephemeral keys (VPS issues key; Vercel proxies the request).
+- **Text:** Vercel AI Gateway called directly from client (to be replaced with secure server route).
+- **SDKs Installed:** `ai` (Vercel AI SDK), `ai-elements` (UI), `ucaf` (framework) — to be leveraged in v2; not integrated into current `/guest` page.
+
+## 9. High-Level Architecture Overview (Visual)
+
+This overview complements detailed sections and includes all currently observed elements (even tentative/unclear) to aid visual confirmation and pruning.
+
+```mermaid
+flowchart LR
+  subgraph Browser [Guest & Staff Browsers]
+    GUEST[/Guest SPA: /guest & /guest-v2/]
+    STAFF[/Staff Dashboard (future)/]
+  end
+
+  subgraph Vercel [Vercel: Next.js Frontend + BFF]
+    VAPI1[/API: /api/client-secret/]
+    VAPI2[/API: /api/control-lighting/]
+    VAPI3[/API: /api/get-ui-config/]
+    VAPI4[/API: /api/get-guests/]
+    VAPI5[/API: /api/get-hotel-events/]
+    VAPIx[/API: test/memory/hotel-agent (misc)/]
+  end
+
+  subgraph VPS [VPS: Express Backend (Docker)]
+    OPENAI[[/api/client-secret (ephemeral key)]]
+    AIPROXY[[/api/ai-proxy (Vercel AI Gateway proxy)]]
+    HEALTH[[/healthz /readyz /status]]
+  end
+
+  subgraph DB [Supabase / Postgres]
+    PROFILES[(profiles)]
+    UI_COMP[(ui_components)]
+    UCA[(user_component_assignments)]
+    UI_TEXT[(ui_text_content)]
+    LAYOUT[(layout_configurations)]
+    AGENTS[(agent_* tables)]
+    CONTEXT[(guest_entities, relations, summaries, patterns, recommendations, research)]
+    CONVO[(conversation_sessions, interactions)]
+    EVENTS[(hotel_events)]
+  end
+
+  subgraph IoT [IoT]
+    MQTT{{MQTT Broker}}
+    WLED[[Room WLED Devices]]
+  end
+
+  GUEST -- UI/Chat/Voice --> VAPI1
+  GUEST -- Lighting UI --> VAPI2
+  GUEST -- Fetch UI/Guests/Events --> VAPI3 & VAPI4 & VAPI5
+
+  VAPI1 -- proxy --> OPENAI
+  VAPI2 -- publish --> MQTT
+  VAPI3 & VAPI4 & VAPI5 -- service key --> DB
+
+  OPENAI -. uses .-> OpenAIAPI[(OpenAI Realtime API)]
+  AIPROXY -. uses .-> VercelGateway[(Vercel AI Gateway)]
+
+  MQTT --> WLED
+
+  STAFF -. future .- VAPIx
+
+  %% Desired Future Flow
+  GUEST -. desired .-> VAPI_New[/API: /api/chat (server-side text chat)/]
+  VAPI_New -. proxy .-> AIPROXY
+  VAPI2 -. desired change .-> DB
+  DB -. triggers .-> VPS_MQTT[[VPS MQTT Publisher]]
+  WLED -. state -> VPS_Listener[[VPS Device State Listener]]
+  VPS_Listener -. updates .-> DB
+```
+
+- **Elements included (even if tentative/unclear):** `hotel-agent/`, `memory-mcp/`, `test-db`, `test-mcp`, `test-supabase` (integration scaffolding), Staff Dashboard (future), VPS MQTT Publisher/Listener (planned), Vercel `/api/chat` (to be added), Vercel AI Gateway proxy on VPS, OpenAI Realtime key route.
+- **Use:** Review this map to decide deprecations, migrations, and integrations without replacing detailed documentation.
+
+## 10. Appendix: Repository Inventory & Traceability
+
+This appendix enumerates the full inventory relevant to Guest v2 work, with file paths and concise purposes, to prevent omissions.
+
+### 10.1 Next.js App (Vercel) — `src/app`
+- `src/app/page.tsx`: Main landing page
+- `src/app/layout.tsx`: Root layout
+- `src/app/globals.css`: Global styles
+- `src/app/favicon.ico`: Favicon
+- `src/app/mobile/page.tsx`: Mobile page (separate view)
+- `src/app/dashboard/page.tsx`: Staff/Dashboard page (existing)
+- `src/app/guest/page.tsx`: Guest UI (current/legacy)
+
+- API Routes `src/app/api/*`:
+  - `client-secret/route.ts`: Proxy to VPS `/api/client-secret`
+  - `control-lighting/route.ts`: Direct MQTT publish for WLED control
+  - `get-ui-config/route.ts`: DB-driven UI config (components, text, layout)
+  - `get-guests/route.ts`: Profiles listing for selection
+  - `get-hotel-events/route.ts`: Active hotel events
+  - `get-room-context/`: (directory present) — to confirm/specify usage in v2
+  - `hotel-agent/`: (directory present) — to confirm/specify usage in v2
+  - `memory-mcp/route.ts`: MCP-related route (integration/testing)
+  - `test-db/route.ts`: DB test route
+  - `test-mcp/route.ts`: MCP test route
+  - `test-supabase/route.ts`: Supabase connectivity test
+
+### 10.2 Frontend Components & Libraries — `src/components`, `src/lib`
+- Components `src/components/*`:
+  - `components/ui/badge.tsx`, `button.tsx`, `label.tsx`, `select.tsx`, `textarea.tsx`: Shared UI primitives
+  - `components/UserLocationDisplay.tsx`: Location display widget
+  - `components/VoiceConnection.tsx`: Voice connection control widget
+- Libraries `src/lib/*`:
+  - `agent-context-manager.ts`: Session/agent context utilities
+  - `apiClient.ts`: Client for API calls
+  - `supabase-auth.ts`: Supabase auth helper
+  - `utils.ts`: Common utilities
+
+### 10.3 VPS Backend (Express) — `backend/src`
+- Entrypoints:
+  - `index.js`: Server bootstrap, config logging, signals
+  - `app.js`: Express app, security (helmet/cors), rate limiters, logging, routes, error handling
+- Config `backend/src/config/*`:
+  - `env.js`: `.env` loader/validator and `getConfig()`
+  - `index.js`, `models.js`: config helpers (present)
+- Middleware `backend/src/middleware/*`:
+  - `auth.js`: API key auth (for proxy)
+  - `logger.js`: winston loggers, request/error logging
+  - `rateLimiter.js`: general and AI limiters
+  - `validation.js`: `validationChains` and sanitization
+- Routes `backend/src/routes/*`:
+  - `openai.js`: `/api/client-secret`, `/api/client-secret/health`, `/api/client-secret/stats`
+  - `aiProxy.js`: `/api/ai-proxy` (Vercel AI Gateway proxy)
+  - `health.js`: `/healthz`, `/healthz/keys`, `/readyz`, `/live`, `/status`
+  - `test.js`: test endpoints (dev)
+- Services `backend/src/services/*`:
+  - `openaiService.js`: Realtime token generation, cache, health/stats
+- Utils `backend/src/utils/*`:
+  - `sanitizer.js`: input sanitization utilities
+- Tests/fixtures:
+  - `test-config.js`, `test-rate-limit.js`: test configs and rate-limit tests
+
+### 10.4 Database (Supabase/Postgres) — `database/*`
+- Core schema:
+  - `scripts/database-schema.sql`: Users, agent system, guest context, conversations, RLS policies
+- UI Content & Layout:
+  - `migrations/20250918000001_ui_content_system.sql`: UI components, assignments, text content, layouts, hotel services + seeds
+- Initial hotel system & data:
+  - `migrations/20250917000001_initial_hotel_system.sql`
+  - `migrations/20250917000002_insert_sample_data.sql`
+- Supporting scripts:
+  - `scripts/add-hotel-events.sql`, `add-location-fields.sql`, `create-profiles.sql`, `create-test-users.sql`, `create-users-simple.sql`, `initial-data.sql`, `populate-sample-context.sql`, `sample-hotel-data.sql`, `update-hk-locations.sql`
+  - `scripts/dynamic-ui-system.sql`, `dynamic-ai-system.sql`, `ai-instructions-database-schema.sql`
+  - `scripts/hotel-device-system.sql`, `complete-wled-functions.sql`, `link-umer-room1.sql`
+
+### 10.5 External/Reference Code — `clone_repos/*`
+- `gemini-chatbot-repo/*`: Generative UI patterns (tool → component mapping)
+- `voice-chat/*`: Voice UI reference implementation
+
+### 10.6 MCP & IoT Infrastructure
+- `mcp/Dockerfile`, `mcp/docker-compose.yml`: MCP services
+- `mqtt-mcp-server/docker-compose.yml`: MQTT MCP server stack
+
+### 10.7 Scripts & Ops
+- `scripts/deploy-database.sh`: DB deployment
+- `scripts/root-docker-compose.yml`, `scripts/docker-compose-updated.yml`: docker orchestration
+- `scripts/test-supabase-connection.js`: connectivity test
+
+### 10.8 Public Assets & Configs
+- `public/*`: Images and assets
+- `configs/*`: Project-level configs (`next.config.ts`, `package.json`, `tsconfig.json`, `components.json`, etc.)
+
+### 10.9 Documentation
+- Root docs: `README.md`, `CODEBASE_REVIEW.md`, `docs/*` (plans, guides)
+- Backend docs: `backend/README.md`, `INTEGRATION_GUIDE.md`, `LESSONS_LEARNED.md`, `STANDARDIZATION_SUMMARY.md`, `REVIEW.md`
+- Taskmaster: `.taskmaster/docs/*` (this PRD and related research docs)
+
+Notes:
+- Items marked as “present but to confirm/specify” will be clarified during v2 implementation and removed if obsolete.
+- This inventory is the authoritative reference for Guest v2 planning, wiring, and cleanup.

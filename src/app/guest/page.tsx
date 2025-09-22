@@ -37,6 +37,10 @@ interface WeatherData {
   temp: number;
   condition: string;
   humidity: number;
+  source?: string;
+  isLive?: boolean;
+  lastUpdated?: string;
+  error?: string;
 }
 
 interface HotelEvent {
@@ -62,7 +66,10 @@ export default function GuestInterface() {
   const [weather, setWeather] = useState<WeatherData>({
     temp: 0,
     condition: '',
-    humidity: 0
+    humidity: 0,
+    isLive: false,
+    source: 'loading',
+    error: undefined
   });
 
   const [hotelEvents, setHotelEvents] = useState<HotelEvent[]>([]);
@@ -148,14 +155,36 @@ export default function GuestInterface() {
         setWeather({
           temp: Math.round(result.weather.temp),
           condition: result.weather.condition,
-          humidity: result.weather.humidity
+          humidity: result.weather.humidity,
+          isLive: true,
+          source: result.source,
+          lastUpdated: new Date().toISOString(),
+          error: undefined
         });
+        console.log('✅ Live weather loaded:', result.source);
       } else {
-        setWeather(prev => ({ ...prev, temp: 26, condition: 'Partly Cloudy', humidity: 70 }));
+        setWeather({
+          temp: 26, 
+          condition: 'Partly Cloudy', 
+          humidity: 70,
+          isLive: false,
+          source: 'api_failed',
+          error: 'Weather API returned no data',
+          lastUpdated: new Date().toISOString()
+        });
+        console.warn('⚠️ Weather API failed, using fallback data');
       }
     } catch (error) {
       console.error('Weather loading failed:', error);
-      setWeather({ temp: 26, condition: 'Partly Cloudy', humidity: 70 });
+      setWeather({ 
+        temp: 26, 
+        condition: 'Partly Cloudy', 
+        humidity: 70,
+        isLive: false,
+        source: 'network_error',
+        error: `Network error: ${error}`,
+        lastUpdated: new Date().toISOString()
+      });
     }
   };
 
@@ -819,9 +848,18 @@ CONVERSATION MEMORY AND CONTEXT BUILDING:
   // Individual component render functions
   const renderWeatherCard = () => (
     <div className="bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm p-4">
-      <h4 className="text-[#f3ebe2] font-medium mb-3 flex items-center">
-        <Sun className="w-4 h-4 mr-2 text-yellow-400" />
-        {uiTextContent.weather_title || 'Hong Kong Weather'}
+      <h4 className="text-[#f3ebe2] font-medium mb-3 flex items-center justify-between">
+        <div className="flex items-center">
+          <Sun className="w-4 h-4 mr-2 text-yellow-400" />
+          {uiTextContent.weather_title || 'Hong Kong Weather'}
+        </div>
+        {/* Weather API Status Indicator */}
+        <div className="flex items-center space-x-1">
+          <div className={`w-2 h-2 rounded-full ${weather.isLive ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+          <span className={`text-xs ${weather.isLive ? 'text-green-300' : 'text-red-300'}`}>
+            {weather.isLive ? 'Live' : 'Offline'}
+          </span>
+        </div>
       </h4>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -837,10 +875,23 @@ CONVERSATION MEMORY AND CONTEXT BUILDING:
             <span className="text-[#f3ebe2]">{weather.humidity}%</span>
           </div>
         </div>
+        
+        {/* Weather Status Info */}
         <div className="mt-3 p-2 bg-white/5 rounded-lg">
           <p className="text-[#f3ebe2]/60 text-xs">
             {weather.temp > 25 ? 'Perfect for exploring Hong Kong or rooftop activities' : 'Great for indoor activities or spa services'}
           </p>
+          {!weather.isLive && (
+            <div className="mt-2 p-1 bg-red-500/10 border border-red-500/20 rounded text-xs">
+              <span className="text-red-300">⚠️ Using fallback data - {weather.source}</span>
+              {weather.error && <div className="text-red-400 mt-1">{weather.error}</div>}
+            </div>
+          )}
+          {weather.isLive && (
+            <div className="mt-2 text-xs text-green-300">
+              ✅ Live from {weather.source} • Updated {new Date(weather.lastUpdated || '').toLocaleTimeString()}
+            </div>
+          )}
         </div>
       </div>
   );

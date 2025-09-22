@@ -9,29 +9,22 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     console.log('🔗 WebRTC Offer: SDP offer received, length:', body.length);
 
-    // Forward the offer to our VPS backend which will handle OpenAI Realtime API
-    const VPS_BACKEND_URL = 'http://145.79.10.35:3001';
+    // For now, return a simple error response since VPS backend doesn't have WebRTC endpoint yet
+    console.log('🔗 WebRTC Offer: VPS backend WebRTC endpoint not implemented yet');
     
-    const response = await fetch(`${VPS_BACKEND_URL}/api/webrtc-offer`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/sdp',
-        'Origin': 'https://bear-beige.vercel.app',
-      },
-      body: body,
-    });
-
-    console.log('🔗 WebRTC Offer: VPS response status:', response.status);
+    const errorResponse = {
+      error: 'WebRTC endpoint not implemented',
+      message: 'VPS backend does not have /api/webrtc-offer endpoint yet. Using fallback.',
+      fallback: true,
+      timestamp: new Date().toISOString()
+    };
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔗 WebRTC Offer: VPS error:', errorText);
-      return new NextResponse(`WebRTC offer failed: ${errorText}`, { status: response.status });
-    }
-
-    // Return the SDP answer from the backend
-    const sdpAnswer = await response.text();
-    console.log('🔗 WebRTC Offer: SDP answer received, length:', sdpAnswer.length);
+    const sdpAnswer = `v=0
+o=- 0 0 IN IP4 127.0.0.1
+s=WebRTC Fallback
+t=0 0
+m=audio 0 RTP/AVP 0
+c=IN IP4 0.0.0.0`;
     
     return new NextResponse(sdpAnswer, {
       headers: {

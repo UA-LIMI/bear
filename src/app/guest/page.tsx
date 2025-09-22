@@ -16,8 +16,7 @@ import {
 
 // Import all working modules
 import { WeatherCard } from '@/components/WeatherCard';
-import { ProfessionalVoiceInterface } from '@/components/ProfessionalVoiceInterface';
-import { ChatInterfaceComplete } from '@/components/ChatInterfaceComplete';
+import { AIModule } from '@/components/AIModule';
 import { RoomControlsComplete } from '@/components/guest/RoomControlsComplete';
 
 interface GuestProfile {
@@ -619,16 +618,14 @@ export default function CompleteGuestInterface() {
             </motion.div>
           )}
           
-          {/* Center panel - Main chat interface module */}
+          {/* Center panel - Complete AI Module (voice + text + visualizer + devices) */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={layout.centerSpan}
           >
-            <ChatInterfaceComplete
+            <AIModule
               selectedGuest={selectedGuest}
-              weather={weather}
-              uiTextContent={uiTextContent}
               onAddMessage={handleAddMessage}
             />
           </motion.div>
@@ -729,19 +726,6 @@ export default function CompleteGuestInterface() {
         </div>
       </main>
 
-      {/* Bottom panel - Professional voice interface module */}
-      <motion.footer
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <ProfessionalVoiceInterface
-          selectedGuest={selectedGuest}
-          weather={weather}
-          uiTextContent={uiTextContent}
-          onAddMessage={handleAddMessage}
-        />
-      </motion.footer>
     </div>
   );
 }

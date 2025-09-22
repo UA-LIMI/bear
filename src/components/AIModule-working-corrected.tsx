@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { RealtimeAgent, RealtimeSession } from '@openai/agents-realtime';
 import { 
   Mic, MicOff, Send, MessageSquare, Volume2, VolumeX, 
   Loader2, Settings, Phone
 } from 'lucide-react';
+import { TranscriptOverlayComponent, UserAudioOutputControlComponent } from '@pipecat-ai/voice-ui-kit';
 
 interface AIMessage {
   id: string;
@@ -43,6 +45,8 @@ interface AIModuleProps {
 export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }: AIModuleProps) {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [session, setSession] = useState<RealtimeSession | null>(null);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [voiceConnected, setVoiceConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -101,16 +105,58 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
-  // SIMPLE voice connection - just show UI for now until backend is ready
+  // WORKING voice connection using VPS backend (from working commit 5675267)
   const connectVoice = async () => {
     setIsProcessing(true);
     
     try {
       console.log('🔗 Connecting to LIMI AI voice system...');
       
-      // For now, just simulate connection since VPS backend needs to be set up
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get ephemeral key from our VPS backend (WORKING APPROACH)
+      const response = await fetch('/api/client-secret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: `guest_${selectedGuest.id}_${Date.now()}`,
+          model: 'gpt-4o-realtime-preview',
+          voice: 'alloy',
+          instructions: `You are LIMI AI assistant for ${selectedGuest.name}, a ${selectedGuest.profile.occupation} with ${selectedGuest.membershipTier} status at The Peninsula Hong Kong. Help with room controls, hotel services, and Hong Kong recommendations.`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get voice session key');
+      }
+
+      const { ephemeralKey } = await response.json();
       
+      // Create OpenAI Realtime session (WORKING VERSION)
+      const agent = new RealtimeAgent({
+        name: 'LIMI AI Assistant',
+        instructions: `You are LIMI AI helping ${selectedGuest.name} at The Peninsula Hong Kong.`
+      });
+
+      const voiceSession = new RealtimeSession(agent);
+      
+      // Get microphone access with working constraints
+      const audioConstraints = {
+        audio: {
+          deviceId: selectedMicrophone ? { exact: selectedMicrophone } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: { ideal: 24000 },
+          channelCount: { ideal: 1 }
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+      setAudioStream(stream);
+
+      // Connect to OpenAI using VPS backend approach (WORKING)
+      await voiceSession.connect({ apiKey: ephemeralKey });
+      
+      setSession(voiceSession);
       setVoiceConnected(true);
       addMessage(`Voice connected! Hi ${selectedGuest.name}, I'm your LIMI AI assistant. How can I help?`, 'ai');
 
@@ -133,6 +179,14 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
   };
 
   const disconnectVoice = () => {
+    // Clean up audio stream
+    if (audioStream) {
+      audioStream.getTracks().forEach(track => track.stop());
+      setAudioStream(null);
+    }
+    
+    // Reset voice state
+    setSession(null);
     setVoiceConnected(false);
     setIsMuted(false);
     setTranscript([]);
@@ -142,7 +196,13 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    if (audioStream) {
+      const audioTrack = audioStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+      }
+    }
   };
 
   // Enhanced text chat
@@ -255,18 +315,13 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
               {/* Speaker Selection */}
               <div>
                 <label className="text-white text-sm block mb-2">🔊 Speaker</label>
-                <select
-                  value={selectedSpeaker}
-                  onChange={(e) => setSelectedSpeaker(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20"
-                >
-                  <option value="">Select speakers</option>
-                  {audioOutputDevices.map(device => (
-                    <option key={device.deviceId} value={device.deviceId}>
-                      {device.label || `Speaker ${device.deviceId.slice(0, 8)}`}
-                    </option>
-                  ))}
-                </select>
+                <UserAudioOutputControlComponent
+                  availableDevices={audioOutputDevices}
+                  selectedDevice={audioOutputDevices.find(d => d.deviceId === selectedSpeaker) || undefined}
+                  updateDevice={(deviceId) => setSelectedSpeaker(deviceId)}
+                  placeholder="Select speakers"
+                  className="w-full"
+                />
               </div>
             </div>
           </motion.div>
@@ -333,19 +388,14 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
             </div>
             <div className="min-h-[60px] flex items-center justify-center">
               {transcript.length > 0 ? (
-                <div className="text-white text-center text-lg">
-                  {transcript.map((word, index) => (
-                    <motion.span
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="inline-block mr-2"
-                    >
-                      {word}
-                    </motion.span>
-                  ))}
-                </div>
+                <TranscriptOverlayComponent
+                  words={transcript}
+                  turnEnd={!isAISpeaking}
+                  className="text-white text-center text-lg"
+                  fadeInDuration={200}
+                  fadeOutDuration={1000}
+                  size="lg"
+                />
               ) : (
                 <p className="text-gray-400 text-sm">Speak to see live transcript...</p>
               )}

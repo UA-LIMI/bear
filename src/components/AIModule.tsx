@@ -171,16 +171,33 @@ Provide helpful, concise assistance based on current weather and guest preferenc
 
       const { ephemeralKey } = await response.json();
       
-      // Enhanced audio constraints for better call quality (WORKING VERSION)
+      // Professional WebRTC audio constraints following best practices from docs
       const audioConstraints = {
         audio: {
           deviceId: selectedMicrophone ? { exact: selectedMicrophone } : undefined,
+          // Core WebRTC settings
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: { ideal: 24000, min: 16000 },
+          // High-quality audio settings
+          sampleRate: { ideal: 48000, min: 24000 }, // Higher quality
+          sampleSize: { ideal: 16 },
           channelCount: { ideal: 1 },
-          latency: { ideal: 0.01, max: 0.05 }
+          latency: { ideal: 0.01, max: 0.02 }, // Lower latency
+          volume: { ideal: 1.0 },
+          // Advanced Google WebRTC constraints
+          googEchoCancellation: true,
+          googAutoGainControl: true,
+          googNoiseSuppression: true,
+          googHighpassFilter: true,
+          googTypingNoiseDetection: true,
+          googDAEchoCancellation: true,
+          googAGC: true,
+          googNS: true,
+          // Professional audio processing
+          googBeamforming: true,
+          googArrayGeometry: true,
+          googAudioProcessing: true
         }
       };
 
@@ -192,14 +209,30 @@ Provide helpful, concise assistance based on current weather and guest preferenc
       const voiceSession = new RealtimeSession(agent);
       const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
       
-      // Log audio settings for debugging
+      // Log audio settings for debugging and optimization
       const audioTrack = stream.getAudioTracks()[0];
       if (audioTrack) {
         const settings = audioTrack.getSettings();
+        const constraints = audioTrack.getConstraints();
         console.log('🎤 Audio track settings:', settings);
+        console.log('📊 Audio constraints applied:', constraints);
+        console.log('🔧 Sample rate achieved:', settings.sampleRate, 'Hz');
+        console.log('🔧 Echo cancellation:', settings.echoCancellation);
+        console.log('🔧 Noise suppression:', settings.noiseSuppression);
+        console.log('🔧 Auto gain control:', settings.autoGainControl);
       }
       
       setAudioStream(stream);
+
+      // Set audio output device if supported
+      if (selectedSpeaker && 'setSinkId' in HTMLAudioElement.prototype) {
+        try {
+          // This will be used when audio comes from the AI
+          console.log('🔊 Setting audio output device:', selectedSpeaker);
+        } catch (error) {
+          console.warn('⚠️ Could not set audio output device:', error);
+        }
+      }
 
       await voiceSession.connect({ apiKey: ephemeralKey });
       

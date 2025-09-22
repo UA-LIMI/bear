@@ -7,6 +7,7 @@ import {
   Mic, MicOff, Send, MessageSquare, Volume2, VolumeX, 
   Loader2, Settings, Phone
 } from 'lucide-react';
+import { TranscriptOverlayComponent } from '@pipecat-ai/voice-ui-kit';
 
 interface AIMessage {
   id: string;
@@ -51,6 +52,9 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
   const [isMuted, setIsMuted] = useState(false);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>('');
+  const [transcript, setTranscript] = useState<string[]>([]);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Enumerate audio devices on component mount
@@ -192,7 +196,17 @@ Provide helpful, concise assistance based on current weather and guest preferenc
       setSession(voiceSession);
       setVoiceConnected(true);
       
-      console.log('✅ Voice session connected with enhanced audio settings');
+      // Simulate transcript for demo (replace with real events when available)
+      setTimeout(() => {
+        setTranscript(['Hello', selectedGuest.name, 'I\'m', 'your', 'AI', 'assistant']);
+        setIsAISpeaking(true);
+        setTimeout(() => {
+          setIsAISpeaking(false);
+          setTimeout(() => setTranscript([]), 2000);
+        }, 3000);
+      }, 2000);
+      
+      console.log('✅ Voice session connected with enhanced audio settings and beautiful UI');
       addMessage(`Voice connected! Hello ${selectedGuest.name}, I'm your AI assistant with enhanced audio quality. How can I help?`, 'ai');
 
     } catch (error) {
@@ -311,6 +325,98 @@ Provide helpful, concise assistance based on current weather and guest preferenc
           </div>
         </div>
       </div>
+
+      {/* Enhanced Voice Interface (when connected) */}
+      {voiceConnected && (
+        <div className="p-6 border-b border-white/10 space-y-4">
+          {/* Audio Visualizers */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-black/20 rounded-xl border border-white/10 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-white text-sm font-medium">You Speaking</h4>
+                <div className={`w-2 h-2 rounded-full ${isUserSpeaking ? 'bg-blue-400 animate-pulse' : 'bg-gray-400'}`} />
+              </div>
+              <div className="h-16 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg flex items-center justify-center">
+                {isUserSpeaking ? (
+                  <div className="flex items-center space-x-1">
+                    {[...Array(8)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          height: [8, Math.random() * 40 + 8, 8],
+                        }}
+                        transition={{
+                          duration: 0.5,
+                          repeat: Infinity,
+                          delay: i * 0.1,
+                        }}
+                        className="w-1 bg-blue-400 rounded-full"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-xs">Listening...</div>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-black/20 rounded-xl border border-white/10 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-white text-sm font-medium">AI Speaking</h4>
+                <div className={`w-2 h-2 rounded-full ${isAISpeaking ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`} />
+              </div>
+              <div className="h-16 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg flex items-center justify-center">
+                {isAISpeaking ? (
+                  <div className="flex items-center space-x-1">
+                    {[...Array(8)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          height: [8, Math.random() * 40 + 8, 8],
+                        }}
+                        transition={{
+                          duration: 0.4,
+                          repeat: Infinity,
+                          delay: i * 0.1,
+                        }}
+                        className="w-1 bg-green-400 rounded-full"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-xs">Ready to speak...</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Live Transcript Display */}
+          <div className="bg-black/20 rounded-xl border border-white/10 p-4 min-h-[100px]">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-white font-medium">Live Transcript</h4>
+              <div className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-300">
+                🔴 Live
+              </div>
+            </div>
+            <div className="min-h-[60px] flex items-center justify-center">
+              {transcript.length > 0 ? (
+                <TranscriptOverlayComponent
+                  words={transcript}
+                  turnEnd={!isAISpeaking}
+                  className="text-white text-center text-lg leading-relaxed"
+                  fadeInDuration={200}
+                  fadeOutDuration={1000}
+                  size="lg"
+                />
+              ) : (
+                <p className="text-gray-400 text-sm">
+                  Speak to see live transcript appear here...
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">

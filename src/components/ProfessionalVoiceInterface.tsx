@@ -10,6 +10,7 @@ import {
   VoiceVisualizer,
   ErrorCard,
   SpinLoader,
+  TranscriptOverlay,
   type PipecatBaseChildProps
 } from '@pipecat-ai/voice-ui-kit';
 import { Loader2, Phone, Settings } from 'lucide-react';
@@ -58,14 +59,34 @@ export function ProfessionalVoiceInterface({
       >
         {({ client, handleConnect, handleDisconnect, error }: PipecatBaseChildProps) => (
           <div className="space-y-4">
+            {/* Real-time transcript overlay */}
+            {client?.connected && (
+              <div className="mb-4 bg-white/5 rounded-lg p-3 min-h-[60px] flex items-center justify-center">
+                <div className="w-full space-y-2">
+                  <div className="text-xs text-[#f3ebe2]/60 text-center">Live Transcript</div>
+                  <TranscriptOverlay 
+                    participant="remote" 
+                    size="md"
+                    className="text-[#f3ebe2] text-center"
+                    fadeInDuration={200}
+                    fadeOutDuration={1000}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Main voice controls */}
             <div className="flex items-center gap-4">
               {/* Professional voice visualizer */}
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#54bb74] to-[#93cfa2]">
-                <VoiceVisualizer
-                  participantType="bot"
-                  className="w-full h-full"
-                />
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#54bb74] to-[#93cfa2] flex items-center justify-center">
+                {client?.connected ? (
+                  <VoiceVisualizer
+                    participantType="bot"
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <Phone className="w-8 h-8 text-white" />
+                )}
               </div>
               
               {/* Connect/disconnect button */}

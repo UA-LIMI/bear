@@ -43,6 +43,8 @@ interface AIModuleProps {
 export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }: AIModuleProps) {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [session, setSession] = useState<any>(null);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [voiceConnected, setVoiceConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -55,6 +57,29 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Voice configuration
+  const config = {
+    model: 'gpt-4o-realtime-preview-2024-10-01',
+    voice: selectedGuest.guestType === 'vip' ? 'alloy' : 'echo',
+    instructions: `You are LIMI AI for The Peninsula Hong Kong, providing personalized assistance to hotel guests.
+
+CURRENT GUEST COMPLETE CONTEXT:
+- Guest Name: ${selectedGuest.name} (${selectedGuest.profile.occupation})
+- Room: ${selectedGuest.stayInfo?.room} at The Peninsula Hong Kong
+- Membership Tier: ${selectedGuest.membershipTier} (${selectedGuest.loyaltyPoints} loyalty points)
+- Guest Type: ${selectedGuest.guestType}
+- Current Location: ${selectedGuest.stayInfo?.location}
+- Service Level: ${selectedGuest.guestType}
+
+REAL-TIME HONG KONG WEATHER:
+- Temperature: ${weather.temp}°C
+- Condition: ${weather.condition}
+- Humidity: ${weather.humidity}%
+- Data Source: ${weather.source} (${weather.isLive ? 'live Google Weather API' : 'fallback data'})
+
+Keep responses concise but comprehensive (under 100 words). Always greet guests by name and acknowledge their membership tier.`
+  };
 
   // Get available audio input and output devices
   const getConnectedAudioDevices = async () => {
@@ -101,38 +126,127 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
-  // SIMPLE voice connection - just show UI for now until backend is ready
+  /**
+   * Get ephemeral key from VPS backend via Vercel proxy
+   */
+  const getEphemeralKey = async (): Promise<string> => {
+    try {
+      console.log('🔑 Requesting ephemeral key from VPS backend...');
+      
+      const response = await fetch('/api/client-secret', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: `frontend_${Date.now()}`,
+          model: config.model,
+          voice: config.voice,
+          instructions: config.instructions
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('🔑 Backend error:', errorData);
+        throw new Error(`Backend error: ${errorData.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      console.log('🔑 Ephemeral key received from VPS backend');
+      
+      // Validate ephemeral key format
+      if (!data.ephemeralKey || !data.ephemeralKey.startsWith('ek_')) {
+        console.error('🔑 Invalid key format received:', data.ephemeralKey);
+        throw new Error('Invalid ephemeral key format received from backend');
+      }
+
+      return data.ephemeralKey;
+
+    } catch (error) {
+      console.error('🔑 Failed to get ephemeral key:', error);
+      throw new Error(`Token acquisition failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  /**
+   * REAL voice connection using VPS backend + WebRTC
+   */
   const connectVoice = async () => {
     setIsProcessing(true);
     
     try {
       console.log('🔗 Connecting to LIMI AI voice system...');
       
-      // For now, just simulate connection since VPS backend needs to be set up
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setVoiceConnected(true);
-      addMessage(`Voice connected! Hi ${selectedGuest.name}, I'm your LIMI AI assistant. How can I help?`, 'ai');
+      // Dynamic import to avoid SSR issues
+      const { RealtimeAgent, RealtimeSession } = await import('@openai/agents-realtime');
 
-      // Demo transcript
-      setTimeout(() => {
-        setTranscript(['Hello', selectedGuest.name, 'How', 'can', 'I', 'help', 'you', 'today?']);
-        setIsAISpeaking(true);
-        setTimeout(() => {
-          setIsAISpeaking(false);
-          setTimeout(() => setTranscript([]), 2000);
-        }, 4000);
-      }, 2000);
+      // Create agent with guest context
+      const agent = new RealtimeAgent({
+        name: 'Limi AI Assistant',
+        instructions: config.instructions,
+      });
+
+      // Create session
+      const voiceSession = new RealtimeSession(agent);
+
+      // Get ephemeral key from VPS backend (THIS IS THE KEY PART!)
+      const ephemeralKey = await getEphemeralKey();
+
+      // Connect using ephemeral key from VPS
+      await voiceSession.connect({ 
+        apiKey: ephemeralKey 
+      });
+
+      // Set up event handlers with proper typing
+      (voiceSession as any).on('connected', () => {
+        console.log('🎉 Voice session connected successfully');
+        setVoiceConnected(true);
+        addMessage(`Voice connected! Hi ${selectedGuest.name}, I'm your LIMI AI assistant. How can I help?`, 'ai');
+      });
+
+      (voiceSession as any).on('disconnected', () => {
+        console.log('🔌 Voice session disconnected');
+        setVoiceConnected(false);
+      });
+
+      (voiceSession as any).on('response.audio_transcript.delta', (event: any) => {
+        if (event.delta) {
+          setTranscript(prev => [...prev, event.delta]);
+          setIsAISpeaking(true);
+        }
+      });
+
+      (voiceSession as any).on('response.audio_transcript.done', () => {
+        setIsAISpeaking(false);
+        setTimeout(() => setTranscript([]), 2000);
+      });
+
+      (voiceSession as any).on('input_audio_buffer.speech_started', () => {
+        setIsUserSpeaking(true);
+      });
+
+      (voiceSession as any).on('input_audio_buffer.speech_stopped', () => {
+        setIsUserSpeaking(false);
+      });
+
+      // Store session
+      setSession(voiceSession);
 
     } catch (error) {
       console.error('❌ Voice connection failed:', error);
       addMessage('Voice connection failed. You can still chat with me using text.', 'ai');
+      setVoiceConnected(false);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const disconnectVoice = () => {
+    if (session) {
+      session.disconnect();
+      setSession(null);
+    }
     setVoiceConnected(false);
     setIsMuted(false);
     setTranscript([]);
@@ -143,9 +257,17 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
+    if (session) {
+      // Toggle microphone in session
+      if (isMuted) {
+        session.startRecording();
+      } else {
+        session.stopRecording();
+      }
+    }
   };
 
-  // Enhanced text chat
+  // Enhanced text chat using Vercel AI SDK
   const sendMessage = async (userMessage: string) => {
     if (!userMessage.trim()) return;
     
@@ -159,7 +281,6 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [
-            ...messages.map(m => ({ role: m.role === 'ai' ? 'assistant' : m.role, content: m.content })),
             { role: 'user', content: userMessage }
           ],
           guestContext: {
@@ -168,18 +289,22 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
             membershipTier: selectedGuest.membershipTier,
             occupation: selectedGuest.profile.occupation,
             location: selectedGuest.stayInfo?.location,
-            weather: weather
+            weather: weather,
+            guestType: selectedGuest.guestType,
+            loyaltyPoints: selectedGuest.loyaltyPoints,
+            serviceLevel: selectedGuest.guestType
           }
-        })
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`Chat API error: ${response.status}`);
+        throw new Error('Chat API request failed');
       }
 
-      // Handle streaming response
       const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
+      if (!reader) {
+        throw new Error('No response body');
+      }
 
       let aiResponse = '';
       const decoder = new TextDecoder();
@@ -300,10 +425,10 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
                 )}
               </div>
             </div>
-            
+
             <div className="bg-black/20 rounded-xl border border-white/10 p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-white text-sm font-medium">AI Speaking</h4>
+                <h4 className="text-white text-sm font-medium">LIMI AI Speaking</h4>
                 <div className={`w-2 h-2 rounded-full ${isAISpeaking ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`} />
               </div>
               <div className="h-16 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg flex items-center justify-center">
@@ -313,103 +438,81 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
                       <motion.div
                         key={i}
                         animate={{ height: [8, Math.random() * 40 + 8, 8] }}
-                        transition={{ duration: 0.4, repeat: Infinity, delay: i * 0.1 }}
+                        transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
                         className="w-1 bg-green-400 rounded-full"
                       />
                     ))}
                   </div>
                 ) : (
-                  <div className="text-gray-400 text-xs">Ready...</div>
+                  <div className="text-gray-400 text-xs">Ready to speak...</div>
                 )}
               </div>
             </div>
           </div>
 
           {/* Live Transcript */}
-          <div className="bg-black/20 rounded-xl border border-white/10 p-4 min-h-[100px]">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-white font-medium">Live Transcript</h4>
-              <div className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-300">🔴 Live</div>
+          {transcript.length > 0 && (
+            <div className="bg-black/20 rounded-xl border border-white/10 p-4">
+              <h4 className="text-white text-sm font-medium mb-2">Live Transcript</h4>
+              <p className="text-gray-300 text-sm">
+                {transcript.join(' ')}
+              </p>
             </div>
-            <div className="min-h-[60px] flex items-center justify-center">
-              {transcript.length > 0 ? (
-                <div className="text-white text-center text-lg">
-                  {transcript.map((word, index) => (
-                    <motion.span
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="inline-block mr-2"
-                    >
-                      {word}
-                    </motion.span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-sm">Speak to see live transcript...</p>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {messages.length === 0 && (
+          <div className="text-center py-8">
+            <div className="text-white/60 mb-4">
+              👋 Welcome {selectedGuest.name}!
+            </div>
+            <div className="text-white/40 text-sm">
+              Connect voice or start typing to chat with LIMI AI
+            </div>
+          </div>
+        )}
+        
         {messages.map((message) => (
           <motion.div
             key={message.id}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-              message.role === 'user'
-                ? 'bg-gradient-to-br from-green-500 to-emerald-500 text-white'
+            <div className={`max-w-[80%] p-4 rounded-2xl ${
+              message.role === 'user' 
+                ? 'bg-blue-500 text-white' 
                 : 'bg-white/10 text-white border border-white/20'
             }`}>
               <p className="text-sm">{message.content}</p>
-              <p className="text-xs opacity-70 mt-1">
-                {message.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              <p className="text-xs opacity-60 mt-2">
+                {message.timestamp.toLocaleTimeString()}
               </p>
             </div>
           </motion.div>
         ))}
-        
-        {isProcessing && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-start"
-          >
-            <div className="bg-white/10 rounded-2xl px-4 py-3 border border-white/20">
-              <div className="flex items-center space-x-2">
-                <Loader2 className="w-4 h-4 text-green-400 animate-spin" />
-                <span className="text-sm text-white/70">LIMI AI is thinking...</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-        
         <div ref={messagesEndRef} />
       </div>
-      
-      {/* Text input */}
+
+      {/* Text Input */}
       <div className="p-6 border-t border-white/10">
-        <div className="flex items-center space-x-3">
+        <div className="flex gap-3">
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage(inputText)}
-            placeholder={`Message LIMI AI for Room ${selectedGuest.stayInfo?.room}...`}
-            className="flex-1 p-3 rounded-lg bg-white/10 text-white placeholder-gray-400 border border-white/20 focus:border-green-400 focus:outline-none"
+            placeholder={`Type a message to LIMI AI...`}
+            className="flex-1 p-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
             disabled={isProcessing}
           />
           <button
             onClick={() => sendMessage(inputText)}
-            disabled={!inputText.trim() || isProcessing}
-            className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all"
+            disabled={isProcessing || !inputText.trim()}
+            className="p-3 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isProcessing ? (
               <Loader2 className="w-5 h-5 text-white animate-spin" />

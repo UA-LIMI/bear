@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from './components/Layout/DashboardLayout';
+import { getGuestProfiles, DashboardGuestProfile } from './services/guestProfileService';
+import { getRooms, DashboardRoom } from './services/roomService';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { RequestsPanel } from './components/Requests/RequestsPanel';
 import { RoomControlPanel } from './components/RoomControl/RoomControlPanel';
@@ -22,14 +24,8 @@ interface GuestRequest {
   aiSuggestion?: string;
 }
 
-interface Room {
-  roomNumber: string;
-  status: 'occupied' | 'available' | 'maintenance';
-  guestName?: string;
-  temperature: number;
-  lights: boolean;
-  maintenanceNeeded: boolean;
-}
+// Using imported interfaces from services
+type Room = DashboardRoom;
 
 interface MenuItem {
   id: string;
@@ -71,9 +67,27 @@ const App: React.FC = () => {
   // OpenAI API key is handled server-side via OPENAI_API_KEY environment variable
   // No client-side initialization needed
 
-  // Load initial data
+  // Load initial data from database
   useEffect(() => {
-    // Mock data loading
+    const loadData = async () => {
+      try {
+        // Load real guest profiles and rooms from database
+        const [profilesData, roomsData] = await Promise.all([
+          getGuestProfiles(),
+          getRooms()
+        ]);
+        
+        setRooms(roomsData);
+        // Note: Guest profiles are loaded by GuestProfilesPanel component directly
+        
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
+    };
+
+    loadData();
+
+    // Mock data for components not yet connected to database
     const mockRequests: GuestRequest[] = [
       {
         id: 'req-001',
@@ -98,31 +112,7 @@ const App: React.FC = () => {
       }
     ];
 
-    const mockRooms: Room[] = [
-      {
-        roomNumber: '2104',
-        status: 'occupied',
-        guestName: 'John Smith',
-        temperature: 22,
-        lights: true,
-        maintenanceNeeded: false
-      },
-      {
-        roomNumber: '1502',
-        status: 'occupied',
-        guestName: 'Maria Garcia',
-        temperature: 24,
-        lights: false,
-        maintenanceNeeded: false
-      },
-      {
-        roomNumber: '3001',
-        status: 'available',
-        temperature: 21,
-        lights: false,
-        maintenanceNeeded: false
-      }
-    ];
+    // Rooms are loaded from database above
 
     const mockMenuItems: MenuItem[] = [
       {
@@ -184,7 +174,7 @@ const App: React.FC = () => {
     ];
 
     setRequests(mockRequests);
-    setRooms(mockRooms);
+    // setRooms called above with real data
     setMenuItems(mockMenuItems);
     setKnowledgeBase(mockKnowledgeBase);
     setNotifications(mockNotifications);

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, Calendar, Clock, Globe, Heart, AlertCircle, MessageSquare, Coffee, Utensils, Activity, MapPin, Hotel, Tag, Star, Award, ChevronRight, Zap, Lightbulb, TrendingUp, ShoppingBag, DollarSign } from 'lucide-react';
-import { mockGuestAISummaries } from '../../services/mockData';
+import { mockGuestAISummaries, mockRequests } from '../../services/mockData';
 import { agentRegistry } from '../../services/agents/agentRegistry';
 import { Sparkles, AlertTriangle } from 'lucide-react';
+import { DashboardGuestProfile } from '../../services/guestProfileService';
+
 interface GuestProfileDetailProps {
-  guest: any;
+  guest: DashboardGuestProfile;
 }
 export const GuestProfileDetail: React.FC<GuestProfileDetailProps> = ({
   guest
@@ -132,8 +134,8 @@ export const GuestProfileDetail: React.FC<GuestProfileDetailProps> = ({
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Calendar className="w-4 h-4 mr-2" />
                 <span>
-                  Check-in: {formatDate(guest.checkIn)} • Check-out:{' '}
-                  {formatDate(guest.checkOut)}
+                  Check-in: {guest.checkIn ? formatDate(guest.checkIn) : 'N/A'} • Check-out:{' '}
+                  {guest.checkOut ? formatDate(guest.checkOut) : 'N/A'}
                 </span>
               </div>
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
@@ -175,7 +177,7 @@ export const GuestProfileDetail: React.FC<GuestProfileDetailProps> = ({
                       Last Visit
                     </p>
                     <p className="text-gray-900 dark:text-white">
-                      {formatDate(guest.lastVisit)}
+                      {guest.lastVisit ? formatDate(guest.lastVisit) : 'First visit'}
                     </p>
                   </div>
                   <div>
@@ -292,7 +294,7 @@ export const GuestProfileDetail: React.FC<GuestProfileDetailProps> = ({
               Request History
             </h3>
             <div className="space-y-4">
-              {guest.requestHistory.map((request: any) => <div key={request.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
+              {mockRequests.filter(req => req.guestName === guest.name).map((request: any) => <div key={request.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex items-start">
                       <div className={`p-2 rounded-full mr-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300`}>
@@ -315,7 +317,7 @@ export const GuestProfileDetail: React.FC<GuestProfileDetailProps> = ({
                     </span>
                   </div>
                 </div>)}
-              {guest.requestHistory.length === 0 && <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+              {mockRequests.filter(req => req.guestName === guest.name).length === 0 && <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                   No request history found
                 </div>}
             </div>

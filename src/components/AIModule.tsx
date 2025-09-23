@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { RealtimeAgent, RealtimeSession } from '@openai/agents-realtime';
 import { 
   Mic, MicOff, Send, MessageSquare, Volume2, VolumeX, 
   Loader2, Settings, Phone
@@ -44,8 +43,6 @@ interface AIModuleProps {
 export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }: AIModuleProps) {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [session, setSession] = useState<RealtimeSession | null>(null);
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [voiceConnected, setVoiceConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -104,99 +101,16 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
-  // WORKING voice connection using VPS backend
+  // SIMPLE voice connection - just show UI for now until backend is ready
   const connectVoice = async () => {
     setIsProcessing(true);
     
     try {
       console.log('🔗 Connecting to LIMI AI voice system...');
       
-      // Get fresh weather context
-      let currentWeather = weather;
-      try {
-        const weatherResponse = await fetch(`/api/get-weather?location=${encodeURIComponent('Hong Kong')}`);
-        const weatherResult = await weatherResponse.json();
-        if (weatherResult?.success && weatherResult.weather) {
-          currentWeather = {
-            temp: Math.round(weatherResult.weather.temp),
-            condition: weatherResult.weather.condition,
-            humidity: weatherResult.weather.humidity,
-            isLive: true,
-            source: weatherResult.source
-          };
-        }
-      } catch (weatherError) {
-        console.warn('Could not fetch fresh weather for voice context:', weatherError);
-      }
-
-      // Build comprehensive AI instructions with real-time context
-      const comprehensiveInstructions = `
-You are LIMI AI for The Peninsula Hong Kong. Current guest: ${selectedGuest.name} (${selectedGuest.profile.occupation}) in Room ${selectedGuest.stayInfo?.room}.
-
-REAL-TIME CONTEXT:
-- Weather: ${currentWeather.temp}°C, ${currentWeather.condition}, ${currentWeather.humidity}% humidity (${currentWeather.isLive ? 'live data' : 'fallback'})
-- Location: ${selectedGuest.stayInfo?.location}
-- Membership: ${selectedGuest.membershipTier} (${selectedGuest.loyaltyPoints} points)
-
-VOICE INTERACTION RULES:
-1. Keep responses under 30 words for natural conversation flow
-2. Always confirm before room changes: "Should I turn on romantic lighting?"
-3. Use guest name and room number for personalization
-4. Stop immediately if interrupted - respond with "Yes, what can I help with?"
-
-AVAILABLE ROOM CONTROLS:
-- Lighting: FX=88 (romantic candle), #FFFFFF (work light), OFF (turn off)
-- Temperature: Ask preferred setting before adjusting
-- Services: Room service, concierge, transportation
-
-Provide helpful, concise assistance based on current weather and guest preferences.
-      `.trim();
-
-      // Get ephemeral key from our VPS backend
-      const response = await fetch('/api/client-secret', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: `guest_${selectedGuest.id}_${Date.now()}`,
-          model: 'gpt-4o-realtime-preview',
-          voice: 'alloy',
-          instructions: comprehensiveInstructions
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get voice session key');
-      }
-
-      const { ephemeralKey } = await response.json();
+      // For now, just simulate connection since VPS backend needs to be set up
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Create OpenAI Realtime session
-      const agent = new RealtimeAgent({
-        name: 'LIMI AI Assistant',
-        instructions: comprehensiveInstructions
-      });
-
-      const voiceSession = new RealtimeSession(agent);
-      
-      // Get microphone access with working constraints
-      const audioConstraints = {
-        audio: {
-          deviceId: selectedMicrophone ? { exact: selectedMicrophone } : undefined,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: { ideal: 24000 },
-          channelCount: { ideal: 1 }
-        }
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
-      setAudioStream(stream);
-
-      // Connect to OpenAI using VPS backend approach
-      await voiceSession.connect({ apiKey: ephemeralKey });
-      
-      setSession(voiceSession);
       setVoiceConnected(true);
       addMessage(`Voice connected! Hi ${selectedGuest.name}, I'm your LIMI AI assistant. How can I help?`, 'ai');
 
@@ -219,14 +133,6 @@ Provide helpful, concise assistance based on current weather and guest preferenc
   };
 
   const disconnectVoice = () => {
-    // Clean up audio stream
-    if (audioStream) {
-      audioStream.getTracks().forEach(track => track.stop());
-      setAudioStream(null);
-    }
-    
-    // Reset voice state
-    setSession(null);
     setVoiceConnected(false);
     setIsMuted(false);
     setTranscript([]);
@@ -236,13 +142,7 @@ Provide helpful, concise assistance based on current weather and guest preferenc
   };
 
   const toggleMute = () => {
-    if (audioStream) {
-      const audioTrack = audioStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-      }
-    }
+    setIsMuted(!isMuted);
   };
 
   // Enhanced text chat

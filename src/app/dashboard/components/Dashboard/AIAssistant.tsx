@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Zap, Send, Sparkles, User } from 'lucide-react';
+import { askStaffQuestion } from '../../services/aiService';
 export const AIAssistant: React.FC = () => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,20 +30,20 @@ export const AIAssistant: React.FC = () => {
     setQuery('');
     setIsLoading(true);
     try {
-      // Simulate AI response
-      setTimeout(() => {
-        setConversation(prev => [...prev, {
-          role: 'assistant',
-          content: "I'm your AI assistant. How can I help you with hotel operations today?",
-          timestamp: new Date()
-        }]);
-        setIsLoading(false);
-      }, 1000);
+      // Get AI response using Vercel AI SDK
+      const aiResponse = await askStaffQuestion(query, 'Hotel dashboard context');
+      
+      setConversation(prev => [...prev, {
+        role: 'assistant',
+        content: aiResponse,
+        timestamp: new Date()
+      }]);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error getting AI response:', error);
       setConversation(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error while processing your request.',
+        content: 'Sorry, I encountered an error while processing your request. Please try again.',
         timestamp: new Date()
       }]);
       setIsLoading(false);

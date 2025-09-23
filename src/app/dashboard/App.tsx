@@ -68,15 +68,8 @@ const App: React.FC = () => {
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseItem[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Initialize OpenAI API key
-  useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-    if (apiKey) {
-      console.log('OpenAI API key loaded');
-    } else {
-      console.warn('OpenAI API key not found in environment variables');
-    }
-  }, []);
+  // OpenAI API key is handled server-side via OPENAI_API_KEY environment variable
+  // No client-side initialization needed
 
   // Load initial data
   useEffect(() => {

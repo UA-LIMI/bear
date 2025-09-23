@@ -4,7 +4,7 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
 // Safely access environment variables with fallback
 let API_KEY = '';
 try {
-  API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+  API_KEY = process.env.OPENAI_API_KEY || '';
 } catch (e) {
   API_KEY = '';
 }

@@ -4,7 +4,7 @@ import { FormEvent, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -18,6 +18,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+
+import { GuestAIComposer } from './GuestAIComposer';
 
 import { useGuestProfiles } from '@/features/guest-profiles/hooks/useGuestProfiles';
 import type { GuestEntity, GuestProfile, GuestPreferences, GuestSummary } from '@/lib/types/supabase';
@@ -601,6 +603,7 @@ export const GuestProfilesModule = () => {
 
                     <TabsContent value="summaries" className="space-y-3">
                       <SummaryList items={selectedGuest.summary} />
+                      <GuestAIComposer guest={selectedGuest} />
                     </TabsContent>
 
                     <TabsContent value="intelligence" className="space-y-3">

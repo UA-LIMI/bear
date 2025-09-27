@@ -1,0 +1,60 @@
+import type { GuestProfile } from '@/lib/types/supabase';
+
+const guestProfiles: GuestProfile[] = [
+  {
+    id: 'guest-001',
+    name: 'James Wilson',
+    email: 'james.wilson@example.com',
+    phone: '+1 (555) 123-4567',
+    nationality: 'United States',
+    language: 'English',
+    vipStatus: 'Gold',
+    visitCount: 5,
+    lastVisit: '2023-08-15',
+    roomPreferences: 'High floor, away from elevator, extra pillows',
+    dietaryRestrictions: 'No shellfish, prefers low-carb options',
+    allergies: 'Shellfish',
+    specialOccasions: 'Anniversary on September 12',
+    notes: 'Prefers sparkling water in room. Enjoys the spa facilities.',
+    photo:
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=faces',
+    currentRoom: '2104',
+    checkIn: '2023-11-10',
+    checkOut: '2023-11-15',
+    preferences: {
+      dining: ['Fine dining', 'Italian cuisine', 'Wine pairing'],
+      activities: ['Spa', 'Golf', 'Business center'],
+      roomService: ['Breakfast', 'Evening turndown service'],
+    },
+    created_at: '2023-01-10T12:00:00Z',
+  },
+  {
+    id: 'guest-002',
+    name: 'Emma Thompson',
+    email: 'emma.thompson@example.com',
+    phone: '+1 (555) 765-4321',
+    nationality: 'United Kingdom',
+    language: 'English',
+    vipStatus: 'Platinum',
+    visitCount: 8,
+    lastVisit: '2023-09-21',
+    roomPreferences: 'Corner suite, hypoallergenic bedding, workspace with monitor',
+    dietaryRestrictions: 'Vegetarian',
+    allergies: null,
+    specialOccasions: null,
+    notes: 'Business traveler. Prefers quiet floors and fast Wi-Fi.',
+    photo:
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=200&fit=crop&crop=faces',
+    currentRoom: '1802',
+    checkIn: '2023-11-12',
+    checkOut: '2023-11-17',
+    preferences: {
+      dining: ['Vegetarian options', 'Room service breakfast'],
+      activities: ['Fitness center', 'In-room spa'],
+      roomService: ['Breakfast', 'Evening tea service'],
+    },
+    created_at: '2022-06-05T08:30:00Z',
+  },
+];
+
+export const getGuestProfilesFixture = () => structuredClone(guestProfiles);

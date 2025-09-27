@@ -1,0 +1,90 @@
+import type { StaffProfile } from '@/lib/types/supabase';
+
+const staffProfiles: StaffProfile[] = [
+  {
+    id: 'staff-001',
+    name: 'Maria Garcia',
+    position: 'Concierge Manager',
+    department: 'Concierge',
+    email: 'maria.garcia@luxhotel.com',
+    phone: '+1 (555) 123-4567',
+    photo:
+      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=160&h=160&fit=crop&crop=faces',
+    joinDate: '2019-04-15',
+    status: 'on duty',
+    shift: '7:00 AM - 3:30 PM',
+    performance: 98,
+    notes:
+      'Fluent in Spanish, French, and Italian. Exceptional knowledge of local attractions. Preferred by VIP guests.',
+    skills: [
+      { name: 'Guest Relations', level: 98 },
+      { name: 'Local Knowledge', level: 95 },
+      { name: 'Problem Solving', level: 92 },
+      { name: 'Languages', level: 96 },
+    ],
+    schedule: [
+      { day: 'Monday', working: true, hours: '7:00 AM - 3:30 PM' },
+      { day: 'Tuesday', working: true, hours: '7:00 AM - 3:30 PM' },
+      { day: 'Wednesday', working: true, hours: '7:00 AM - 3:30 PM' },
+      { day: 'Thursday', working: true, hours: '7:00 AM - 3:30 PM' },
+      { day: 'Friday', working: true, hours: '7:00 AM - 3:30 PM' },
+      { day: 'Saturday', working: false, hours: '' },
+      { day: 'Sunday', working: false, hours: '' },
+    ],
+    metrics: {
+      guestSatisfaction: 98,
+      guestSatisfactionTrend: 'up',
+      taskEfficiency: 95,
+      taskEfficiencyTrend: 'up',
+      totalTasks: 245,
+      tasksOnTime: 238,
+      avgResolutionTime: 14,
+      responseRate: 99,
+      ratings: [1, 0, 4, 12, 83],
+    },
+    created_at: '2021-01-01T08:00:00Z',
+  },
+  {
+    id: 'staff-002',
+    name: 'Robert Kim',
+    position: 'Maintenance Supervisor',
+    department: 'Maintenance',
+    email: 'robert.kim@luxhotel.com',
+    phone: '+1 (555) 987-6543',
+    photo:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop&crop=faces',
+    joinDate: '2017-08-22',
+    status: 'on duty',
+    shift: '6:00 AM - 2:30 PM',
+    performance: 94,
+    notes: 'Certified HVAC technician. Expert in building automation systems.',
+    skills: [
+      { name: 'HVAC Systems', level: 98 },
+      { name: 'Electrical Systems', level: 95 },
+      { name: 'Preventive Maintenance', level: 97 },
+    ],
+    schedule: [
+      { day: 'Monday', working: true, hours: '6:00 AM - 2:30 PM' },
+      { day: 'Tuesday', working: true, hours: '6:00 AM - 2:30 PM' },
+      { day: 'Wednesday', working: true, hours: '6:00 AM - 2:30 PM' },
+      { day: 'Thursday', working: true, hours: '6:00 AM - 2:30 PM' },
+      { day: 'Friday', working: true, hours: '6:00 AM - 2:30 PM' },
+      { day: 'Saturday', working: false, hours: '' },
+      { day: 'Sunday', working: false, hours: '' },
+    ],
+    metrics: {
+      guestSatisfaction: 92,
+      guestSatisfactionTrend: 'up',
+      taskEfficiency: 94,
+      taskEfficiencyTrend: 'up',
+      totalTasks: 312,
+      tasksOnTime: 298,
+      avgResolutionTime: 42,
+      responseRate: 97,
+      ratings: [2, 1, 5, 20, 72],
+    },
+    created_at: '2020-02-15T09:00:00Z',
+  },
+];
+
+export const getStaffProfilesFixture = () => structuredClone(staffProfiles);

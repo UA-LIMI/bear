@@ -1,29 +1,25 @@
 "use client";
 
-import { useMemo, useState } from 'react';
-import { Badge, Button, Card, Divider, Modal, Text, TextField, View } from 'reshaped';
+import { FormEvent, useMemo, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 import { useGuestProfiles } from '@/features/guest-profiles/hooks/useGuestProfiles';
 import type { GuestEntity, GuestProfile, GuestPreferences, GuestSummary } from '@/lib/types/supabase';
-
-const formatDate = (value?: string | null) => {
-  if (!value) {
-    return '—';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
 
 type FormState = {
   name: string;
@@ -51,6 +47,25 @@ const emptyFormState: FormState = {
   dining: '',
   activities: '',
   roomService: '',
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) {
+    return '—';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const createFormStateFromProfile = (profile: GuestProfile): FormState => ({
@@ -82,240 +97,246 @@ const parsePreferences = (state: FormState): GuestPreferences => ({
     .filter(Boolean),
 });
 
-const GuestProfileCard = ({
-  guest,
-  selected,
-  onSelect,
-}: {
+type GuestProfileCardProps = {
   guest: GuestProfile;
   selected: boolean;
   onSelect: () => void;
-}) => (
-  <Card elevated={selected} onClick={onSelect} className="cursor-pointer">
-    <View direction="column" gap={3}>
-      <View direction="row" justify="space-between" align="center">
-        <View direction="column" gap={1}>
-          <Text variant="body-2" weight="bold">
-            {guest.name}
-          </Text>
-          <Text variant="caption-1">Room {guest.currentRoom ?? '—'}</Text>
-        </View>
-        <Badge>{guest.vipStatus}</Badge>
-      </View>
-      <Divider />
-      <View direction="column" gap={1}>
-        <Text variant="caption-1">Email: {guest.email}</Text>
-        <Text variant="caption-1">Phone: {guest.phone || '—'}</Text>
-        <Text variant="caption-1">Check-out: {formatDate(guest.checkOut)}</Text>
-      </View>
-    </View>
-  </Card>
+};
+
+const GuestProfileCard = ({ guest, selected, onSelect }: GuestProfileCardProps) => (
+  <button
+    type="button"
+    onClick={onSelect}
+    className={cn(
+      'w-full rounded-lg border p-4 text-left transition-colors',
+      selected ? 'border-primary bg-primary/10' : 'hover:bg-muted'
+    )}
+  >
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="font-semibold text-foreground">{guest.name}</p>
+        <p className="text-sm text-muted-foreground">Room {guest.currentRoom ?? '—'}</p>
+      </div>
+      <Badge variant="secondary" className="capitalize">
+        {guest.vipStatus || 'standard'}
+      </Badge>
+    </div>
+
+    <Separator className="my-3" />
+
+    <dl className="space-y-1 text-sm text-muted-foreground">
+      <div className="flex items-center justify-between gap-2">
+        <dt>Email</dt>
+        <dd className="text-foreground">{guest.email}</dd>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <dt>Phone</dt>
+        <dd className="text-foreground">{guest.phone || '—'}</dd>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <dt>Check-out</dt>
+        <dd className="text-foreground">{formatDate(guest.checkOut)}</dd>
+      </div>
+    </dl>
+  </button>
 );
 
-const SummaryList = ({ items }: { items: GuestSummary[] }) => {
+type SummaryListProps = {
+  items: GuestSummary[];
+};
+
+const SummaryList = ({ items }: SummaryListProps) => {
   if (items.length === 0) {
-    return <Text variant="body-2">No AI summaries available.</Text>;
+    return <p className="text-sm text-muted-foreground">No AI summaries available.</p>;
   }
 
   return (
-    <View direction="column" gap={3}>
+    <div className="space-y-3">
       {items.map(summary => (
-        <Card key={summary.id} padding={{ s: 3 }}>
-          <View direction="column" gap={2}>
-            <Text variant="body-2" weight="bold">
-              {summary.title}
-            </Text>
-            <Text variant="caption-1" color="neutral-faded">
-              {formatDate(summary.createdAt)}
-            </Text>
-            <Text variant="body-2">{summary.content}</Text>
-            {summary.keyPoints && summary.keyPoints.length > 0 && (
-              <View direction="column" gap={1}>
-                <Text variant="caption-1" color="neutral-faded">
-                  Key points
-                </Text>
-                <View direction="column" gap={0.5}>
-                  {summary.keyPoints.map(point => (
-                    <Text key={point} variant="caption-1">
-                      • {point}
-                    </Text>
-                  ))}
-                </View>
-              </View>
-            )}
-          </View>
-        </Card>
+        <div key={summary.id} className="rounded-lg border p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold text-foreground">{summary.title}</p>
+            <span className="text-xs text-muted-foreground">{formatDate(summary.createdAt)}</span>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">{summary.content}</p>
+          {summary.keyPoints && summary.keyPoints.length > 0 && (
+            <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+              {summary.keyPoints.map(point => (
+                <li key={point}>• {point}</li>
+              ))}
+            </ul>
+          )}
+        </div>
       ))}
-    </View>
+    </div>
   );
 };
 
-const EntityList = ({ items }: { items: GuestEntity[] }) => {
+type EntityListProps = {
+  items: GuestEntity[];
+};
+
+const EntityList = ({ items }: EntityListProps) => {
   if (items.length === 0) {
-    return <Text variant="body-2">No guest intelligence captured yet.</Text>;
+    return <p className="text-sm text-muted-foreground">No guest intelligence captured yet.</p>;
   }
 
   return (
-    <View direction="column" gap={3}>
+    <div className="space-y-3">
       {items.map(entity => (
-        <Card key={entity.id} padding={{ s: 3 }}>
-          <View direction="column" gap={2}>
-            <View direction="row" justify="space-between" align="center">
-              <Text variant="body-2" weight="bold">
-                {entity.name}
-              </Text>
-              <Badge>{entity.entityType}</Badge>
-            </View>
-            <Text variant="caption-1" color="neutral-faded">
-              Category: {entity.category}
-            </Text>
-            {entity.metadata && Object.keys(entity.metadata).length > 0 && (
-              <View direction="column" gap={1}>
-                {Object.entries(entity.metadata).map(([key, value]) => (
-                  <Text key={key} variant="caption-1">
-                    <strong>{key}:</strong> {String(value)}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </View>
-        </Card>
+        <div key={entity.id} className="rounded-lg border p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold text-foreground">{entity.name}</p>
+            <Badge variant="outline" className="capitalize">
+              {entity.entityType}
+            </Badge>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">Category: {entity.category}</p>
+          {entity.metadata && Object.keys(entity.metadata).length > 0 && (
+            <dl className="mt-3 space-y-1 text-sm text-muted-foreground">
+              {Object.entries(entity.metadata).map(([key, value]) => (
+                <div key={key} className="flex items-center justify-between gap-2">
+                  <dt className="capitalize">{key}</dt>
+                  <dd className="text-foreground">{String(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
       ))}
-    </View>
+    </div>
   );
 };
 
-type GuestProfileModalProps = {
-  title: string;
-  confirmLabel: string;
-  loading: boolean;
-  open: boolean;
+type GuestProfileFormProps = {
   formState: FormState;
   error: string | null;
+  loading: boolean;
+  confirmLabel: string;
   onChange: (state: FormState) => void;
-  onClose: () => void;
   onSubmit: () => void;
+  onClose: () => void;
 };
 
-const GuestProfileModal = ({
-  title,
-  confirmLabel,
-  loading,
-  open,
+const GuestProfileForm = ({
   formState,
   error,
+  loading,
+  confirmLabel,
   onChange,
-  onClose,
   onSubmit,
-}: GuestProfileModalProps) => (
-  <Modal active={open} onClose={onClose} position="center" size={{ s: '100%', l: '640px' }}>
-    <View direction="column" gap={4} padding={{ s: 4 }}>
-      <View direction="column" gap={1}>
-        <Text variant="title-6" weight="bold">
-          {title}
-        </Text>
-        <Text variant="caption-1" color="neutral-faded">
-          Fill in guest details and preferences.
-        </Text>
-      </View>
+  onClose,
+}: GuestProfileFormProps) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSubmit();
+  };
 
-      <View direction="column" gap={3}>
-        <TextField
-          name="name"
-          value={formState.name}
-          onChange={({ value }) => onChange({ ...formState, name: value })}
-          placeholder="Guest name"
-        />
-        <TextField
-          name="email"
-          value={formState.email}
-          onChange={({ value }) => onChange({ ...formState, email: value })}
-          placeholder="Email"
-        />
-        <TextField
-          name="phone"
-          value={formState.phone}
-          onChange={({ value }) => onChange({ ...formState, phone: value })}
-          placeholder="Phone"
-        />
-        <TextField
-          name="vipStatus"
-          value={formState.vipStatus}
-          onChange={({ value }) => onChange({ ...formState, vipStatus: value })}
-          placeholder="VIP status"
-        />
-        <TextField
-          name="currentRoom"
-          value={formState.currentRoom}
-          onChange={({ value }) => onChange({ ...formState, currentRoom: value })}
-          placeholder="Current room"
-        />
-        <View direction={{ s: 'column', l: 'row' }} gap={3}>
-          <TextField
+  return (
+    <form onSubmit={handleSubmit} className="flex h-full flex-col gap-6">
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            name="name"
+            value={formState.name}
+            onChange={event => onChange({ ...formState, name: event.target.value })}
+            placeholder="Guest name"
+            required
+          />
+          <Input
+            name="email"
+            type="email"
+            value={formState.email}
+            onChange={event => onChange({ ...formState, email: event.target.value })}
+            placeholder="Email"
+            required
+          />
+          <Input
+            name="phone"
+            value={formState.phone}
+            onChange={event => onChange({ ...formState, phone: event.target.value })}
+            placeholder="Phone"
+          />
+          <Input
+            name="vipStatus"
+            value={formState.vipStatus}
+            onChange={event => onChange({ ...formState, vipStatus: event.target.value })}
+            placeholder="VIP status"
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            name="currentRoom"
+            value={formState.currentRoom}
+            onChange={event => onChange({ ...formState, currentRoom: event.target.value })}
+            placeholder="Current room"
+          />
+          <Input
             name="checkIn"
             value={formState.checkIn}
-            onChange={({ value }) => onChange({ ...formState, checkIn: value })}
+            onChange={event => onChange({ ...formState, checkIn: event.target.value })}
             placeholder="Check-in (ISO date)"
           />
-          <TextField
+          <Input
             name="checkOut"
             value={formState.checkOut}
-            onChange={({ value }) => onChange({ ...formState, checkOut: value })}
+            onChange={event => onChange({ ...formState, checkOut: event.target.value })}
             placeholder="Check-out (ISO date)"
           />
-        </View>
-        <TextField
-          name="notes"
-          value={formState.notes}
-          onChange={({ value }) => onChange({ ...formState, notes: value })}
-          placeholder="Notes"
-          multiline
-        />
-      </View>
+        </div>
 
-      <Divider />
+        <div className="grid gap-4">
+          <label className="space-y-2 text-sm">
+            <span className="font-medium text-foreground">Notes</span>
+            <textarea
+              name="notes"
+              value={formState.notes}
+              onChange={event => onChange({ ...formState, notes: event.target.value })}
+              placeholder="Internal notes"
+              className="h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            />
+          </label>
+        </div>
 
-      <View direction="column" gap={3}>
-        <Text variant="body-2" weight="bold">
-          Preferences (comma-separated)
-        </Text>
-        <TextField
-          name="dining"
-          value={formState.dining}
-          onChange={({ value }) => onChange({ ...formState, dining: value })}
-          placeholder="Dining preferences"
-        />
-        <TextField
-          name="activities"
-          value={formState.activities}
-          onChange={({ value }) => onChange({ ...formState, activities: value })}
-          placeholder="Activity preferences"
-        />
-        <TextField
-          name="roomService"
-          value={formState.roomService}
-          onChange={({ value }) => onChange({ ...formState, roomService: value })}
-          placeholder="Room service preferences"
-        />
-      </View>
+        <Separator />
 
-      {error && (
-        <Text variant="caption-1" color="critical">
-          {error}
-        </Text>
-      )}
+        <div className="grid gap-4">
+          <p className="text-sm font-semibold text-foreground">Preferences (comma-separated)</p>
+          <Input
+            name="dining"
+            value={formState.dining}
+            onChange={event => onChange({ ...formState, dining: event.target.value })}
+            placeholder="Dining preferences"
+          />
+          <Input
+            name="activities"
+            value={formState.activities}
+            onChange={event => onChange({ ...formState, activities: event.target.value })}
+            placeholder="Activity preferences"
+          />
+          <Input
+            name="roomService"
+            value={formState.roomService}
+            onChange={event => onChange({ ...formState, roomService: event.target.value })}
+            placeholder="Room service preferences"
+          />
+        </div>
+      </div>
 
-      <View direction="row" justify="end" gap={2}>
-        <Button variant="outline" onClick={onClose} disabled={loading}>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <SheetFooter className="mt-auto flex flex-row items-center justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
           Cancel
         </Button>
-        <Button variant="solid" color="primary" onClick={onSubmit} disabled={loading}>
+        <Button type="submit" disabled={loading}>
           {loading ? 'Saving…' : confirmLabel}
         </Button>
-      </View>
-    </View>
-  </Modal>
-);
+      </SheetFooter>
+    </form>
+  );
+};
 
 export const GuestProfilesModule = () => {
   const {
@@ -333,6 +354,10 @@ export const GuestProfilesModule = () => {
   );
 
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
+  const [isCreateOpen, setCreateOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
+  const [formState, setFormState] = useState<FormState>(emptyFormState);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const selectedGuest = useMemo(() => {
     if (!selectedGuestId && guests.length > 0) {
@@ -341,11 +366,6 @@ export const GuestProfilesModule = () => {
 
     return guests.find(guest => guest.id === selectedGuestId) ?? null;
   }, [guests, selectedGuestId]);
-
-  const [isCreateOpen, setCreateOpen] = useState(false);
-  const [isEditOpen, setEditOpen] = useState(false);
-  const [formState, setFormState] = useState<FormState>(emptyFormState);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const handleOpenCreate = () => {
     setFormState(emptyFormState);
@@ -423,162 +443,206 @@ export const GuestProfilesModule = () => {
   };
 
   return (
-    <View direction="column" gap={6} className="min-h-full">
-      <View direction="row" justify="space-between" align="center">
-        <Text variant="title-4" weight="bold">
-          Guest profiles
-        </Text>
-        <Button onClick={handleOpenCreate} color="primary" variant="solid">
-          Create guest
-        </Button>
-      </View>
+    <div className="flex min-h-full flex-col gap-6">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Guest profiles</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage in-house guests, personalize their stay, and review AI insights.
+          </p>
+        </div>
+        <Button onClick={handleOpenCreate}>Create guest</Button>
+      </div>
 
       {isLoading ? (
-        <Text variant="body-2">Loading guests…</Text>
+        <p className="text-sm text-muted-foreground">Loading guests…</p>
       ) : guests.length === 0 ? (
-        <Text variant="body-2">No checked-in guests found.</Text>
+        <p className="text-sm text-muted-foreground">No checked-in guests found.</p>
       ) : (
-        <View direction={{ s: 'column', l: 'row' }} gap={6} className="w-full">
-          <View
-            width={{ s: '100%', l: '32%' }}
-            direction="column"
-            gap={3}
-            className="max-h-[70vh] overflow-y-auto pr-2"
-          >
-            {guests.map(guest => (
-              <GuestProfileCard
-                key={guest.id}
-                guest={guest}
-                selected={selectedGuest?.id === guest.id}
-                onSelect={() => setSelectedGuestId(guest.id)}
-              />
-            ))}
-          </View>
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <ScrollArea className="h-[70vh] rounded-lg border lg:w-1/3">
+            <div className="space-y-3 p-3">
+              {guests.map(guest => (
+                <GuestProfileCard
+                  key={guest.id}
+                  guest={guest}
+                  selected={selectedGuest?.id === guest.id}
+                  onSelect={() => setSelectedGuestId(guest.id)}
+                />
+              ))}
+            </div>
+          </ScrollArea>
 
-          <View width={{ s: '100%', l: '68%' }} direction="column" gap={4}>
+          <div className="flex-1">
             {selectedGuest ? (
-              <Card padding={{ s: 4 }}>
-                <View direction="column" gap={4}>
-                  <View direction="row" justify="space-between" align="center">
-                    <View direction="column" gap={1}>
-                      <Text variant="title-6" weight="bold">
-                        {selectedGuest.name}
-                      </Text>
-                      <Text variant="caption-1" color="neutral-faded">
-                        Room {selectedGuest.currentRoom ?? '—'} • {selectedGuest.language}
-                      </Text>
-                    </View>
-                    <Button variant="outline" onClick={handleOpenEdit}>
-                      Edit profile
-                    </Button>
-                  </View>
-
-                  <Divider />
-
-                  <View direction="column" gap={3}>
-                    <Text variant="body-2" weight="bold">
+              <Card className="h-full">
+                <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <CardTitle className="text-xl">{selectedGuest.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Room {selectedGuest.currentRoom ?? '—'} · {selectedGuest.language}
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleOpenEdit}>
+                    Edit profile
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <section className="space-y-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Contact
-                    </Text>
-                    <View direction="column" gap={1}>
-                      <Text variant="caption-1">Email: {selectedGuest.email}</Text>
-                      <Text variant="caption-1">Phone: {selectedGuest.phone || '—'}</Text>
-                    </View>
-                  </View>
+                    </h2>
+                    <dl className="space-y-1 text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>Email</dt>
+                        <dd className="text-foreground">{selectedGuest.email}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>Phone</dt>
+                        <dd className="text-foreground">{selectedGuest.phone || '—'}</dd>
+                      </div>
+                    </dl>
+                  </section>
 
-                  <Divider />
+                  <Separator />
 
-                  <View direction="column" gap={3}>
-                    <Text variant="body-2" weight="bold">
+                  <section className="space-y-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Stay details
-                    </Text>
-                    <View direction="column" gap={1}>
-                      <Text variant="caption-1">Check-in: {formatDate(selectedGuest.checkIn)}</Text>
-                      <Text variant="caption-1">Check-out: {formatDate(selectedGuest.checkOut)}</Text>
-                      <Text variant="caption-1">Loyalty points: {selectedGuest.loyaltyPoints}</Text>
-                      <Text variant="caption-1">Visit count: {selectedGuest.visitCount}</Text>
-                    </View>
-                  </View>
+                    </h2>
+                    <dl className="space-y-1 text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>Check-in</dt>
+                        <dd className="text-foreground">{formatDate(selectedGuest.checkIn)}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>Check-out</dt>
+                        <dd className="text-foreground">{formatDate(selectedGuest.checkOut)}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>Loyalty points</dt>
+                        <dd className="text-foreground">{selectedGuest.loyaltyPoints}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt>Visit count</dt>
+                        <dd className="text-foreground">{selectedGuest.visitCount}</dd>
+                      </div>
+                    </dl>
+                  </section>
 
-                  <Divider />
+                  <Separator />
 
-                  <View direction="column" gap={3}>
-                    <Text variant="body-2" weight="bold">
+                  <section className="space-y-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Preferences
-                    </Text>
-                    <View direction="column" gap={1}>
-                      <Text variant="caption-1">
-                        Dining: {(selectedGuest.preferences.dining ?? []).join(', ') || '—'}
-                      </Text>
-                      <Text variant="caption-1">
-                        Activities: {(selectedGuest.preferences.activities ?? []).join(', ') || '—'}
-                      </Text>
-                      <Text variant="caption-1">
-                        Room service: {(selectedGuest.preferences.roomService ?? []).join(', ') || '—'}
-                      </Text>
-                    </View>
-                  </View>
+                    </h2>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li>
+                        <span className="font-medium text-foreground">Dining:</span>{' '}
+                        {(selectedGuest.preferences.dining ?? []).join(', ') || '—'}
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Activities:</span>{' '}
+                        {(selectedGuest.preferences.activities ?? []).join(', ') || '—'}
+                      </li>
+                      <li>
+                        <span className="font-medium text-foreground">Room service:</span>{' '}
+                        {(selectedGuest.preferences.roomService ?? []).join(', ') || '—'}
+                      </li>
+                    </ul>
+                  </section>
 
                   {selectedGuest.notes && (
                     <>
-                      <Divider />
-                      <View direction="column" gap={2}>
-                        <Text variant="body-2" weight="bold">
+                      <Separator />
+                      <section className="space-y-2">
+                        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                           Notes
-                        </Text>
-                        <Text variant="caption-1">{selectedGuest.notes}</Text>
-                      </View>
+                        </h2>
+                        <p className="text-sm text-muted-foreground">{selectedGuest.notes}</p>
+                      </section>
                     </>
                   )}
 
-                  <Divider />
+                  <Separator />
 
-                  <View direction="column" gap={3}>
-                    <Text variant="body-2" weight="bold">
+                  <section className="space-y-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       AI summaries
-                    </Text>
+                    </h2>
                     <SummaryList items={selectedGuest.summary} />
-                  </View>
+                  </section>
 
-                  <Divider />
+                  <Separator />
 
-                  <View direction="column" gap={3}>
-                    <Text variant="body-2" weight="bold">
+                  <section className="space-y-3">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Guest intelligence
-                    </Text>
+                    </h2>
                     <EntityList items={selectedGuest.entities} />
-                  </View>
-                </View>
+                  </section>
+                </CardContent>
               </Card>
             ) : (
-              <Text variant="body-2">Select a guest to view details.</Text>
+              <p className="text-sm text-muted-foreground">Select a guest to view details.</p>
             )}
-          </View>
-        </View>
+          </div>
+        </div>
       )}
 
-      <GuestProfileModal
-        title="Create guest profile"
-        confirmLabel="Create"
-        loading={isCreatingGuest}
+      <Sheet
         open={isCreateOpen}
-        formState={formState}
-        error={formError}
-        onChange={setFormState}
-        onClose={handleCloseModals}
-        onSubmit={handleSubmitCreate}
-      />
+        onOpenChange={open => {
+          if (!open) {
+            handleCloseModals();
+          } else {
+            setCreateOpen(true);
+          }
+        }}
+      >
+        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle>Create guest profile</SheetTitle>
+            <SheetDescription>Fill in guest details and preferences.</SheetDescription>
+          </SheetHeader>
+          <GuestProfileForm
+            formState={formState}
+            error={formError}
+            loading={isCreatingGuest}
+            confirmLabel="Create"
+            onChange={setFormState}
+            onSubmit={handleSubmitCreate}
+            onClose={handleCloseModals}
+          />
+        </SheetContent>
+      </Sheet>
 
-      <GuestProfileModal
-        title="Edit guest profile"
-        confirmLabel="Save changes"
-        loading={isUpdatingGuest}
+      <Sheet
         open={isEditOpen}
-        formState={formState}
-        error={formError}
-        onChange={setFormState}
-        onClose={handleCloseModals}
-        onSubmit={handleSubmitEdit}
-      />
-    </View>
+        onOpenChange={open => {
+          if (!open) {
+            handleCloseModals();
+          } else {
+            setEditOpen(true);
+          }
+        }}
+      >
+        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle>Edit guest profile</SheetTitle>
+            <SheetDescription>Update guest contact details and stay preferences.</SheetDescription>
+          </SheetHeader>
+          <GuestProfileForm
+            formState={formState}
+            error={formError}
+            loading={isUpdatingGuest}
+            confirmLabel="Save changes"
+            onChange={setFormState}
+            onSubmit={handleSubmitEdit}
+            onClose={handleCloseModals}
+          />
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 };

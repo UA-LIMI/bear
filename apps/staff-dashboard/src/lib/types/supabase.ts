@@ -1,20 +1,272 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export interface Database {
+  public: {
+    Tables: {
+      guest_profiles: {
+        Row: {
+          id: string;
+          name: string;
+          display_name: string | null;
+          username: string | null;
+          email: string;
+          phone: string | null;
+          nationality: string | null;
+          language: string | null;
+          vip_status: string | null;
+          visit_count: number | null;
+          loyalty_points: number | null;
+          last_visit: string | null;
+          room_preferences: string | null;
+          dietary_restrictions: string | null;
+          allergies: string | null;
+          special_occasions: string | null;
+          notes: string | null;
+          photo: string | null;
+          current_room: string | null;
+          check_in: string | null;
+          check_out: string | null;
+          preferences: Json | null;
+          summary: Json | null;
+          entities: Json | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          display_name?: string | null;
+          username?: string | null;
+          email: string;
+          phone?: string | null;
+          nationality?: string | null;
+          language?: string | null;
+          vip_status?: string | null;
+          visit_count?: number | null;
+          loyalty_points?: number | null;
+          last_visit?: string | null;
+          room_preferences?: string | null;
+          dietary_restrictions?: string | null;
+          allergies?: string | null;
+          special_occasions?: string | null;
+          notes?: string | null;
+          photo?: string | null;
+          current_room?: string | null;
+          check_in?: string | null;
+          check_out?: string | null;
+          preferences?: Json | null;
+          summary?: Json | null;
+          entities?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          display_name?: string | null;
+          username?: string | null;
+          email?: string;
+          phone?: string | null;
+          nationality?: string | null;
+          language?: string | null;
+          vip_status?: string | null;
+          visit_count?: number | null;
+          loyalty_points?: number | null;
+          last_visit?: string | null;
+          room_preferences?: string | null;
+          dietary_restrictions?: string | null;
+          allergies?: string | null;
+          special_occasions?: string | null;
+          notes?: string | null;
+          photo?: string | null;
+          current_room?: string | null;
+          check_in?: string | null;
+          check_out?: string | null;
+          preferences?: Json | null;
+          summary?: Json | null;
+          entities?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      guest_requests: {
+        Row: {
+          id: string;
+          guest_id: string | null;
+          room_number: string | null;
+          guest_name: string | null;
+          request_type: string | null;
+          status: string | null;
+          priority: string | null;
+          message: string | null;
+          conversation: Json | null;
+          scheduled: boolean | null;
+          scheduled_for: string | null;
+          assigned_staff: string | null;
+          ai_suggestion: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+          timestamp: string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['guest_requests']['Row']>;
+        Update: Partial<Database['public']['Tables']['guest_requests']['Row']>;
+        Relationships: [];
+      };
+      rooms: {
+        Row: {
+          id: string;
+          hotel_id: string | null;
+          room_number: string;
+          room_type: string | null;
+          floor_number: number | null;
+          description: string | null;
+          status: string | null;
+          guest_name: string | null;
+          check_in: string | null;
+          check_out: string | null;
+          temperature: number | null;
+          lights: boolean | null;
+          do_not_disturb: boolean | null;
+          ac_on: boolean | null;
+          curtains_open: boolean | null;
+          housekeeping_status: string | null;
+          minibar_restocked: boolean | null;
+          maintenance_needed: boolean | null;
+          guest_schedule: Json | null;
+          updated_at: string | null;
+          created_at: string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['rooms']['Row']>;
+        Update: Partial<Database['public']['Tables']['rooms']['Row']>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          type: string | null;
+          title: string | null;
+          message: string | null;
+          timestamp: string | null;
+          read: boolean | null;
+          request_id: string | null;
+          room_number: string | null;
+          guest_id: string | null;
+          sender: string | null;
+          created_at: string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['notifications']['Row']>;
+        Update: Partial<Database['public']['Tables']['notifications']['Row']>;
+        Relationships: [];
+      };
+      menu_items: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          price: number | null;
+          category: string | null;
+          available: boolean | null;
+          preparation_time: number | null;
+          allergens: string[] | null;
+          dietary_info: string | null;
+          image: string | null;
+          updated_at: string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['menu_items']['Row']>;
+        Update: Partial<Database['public']['Tables']['menu_items']['Row']>;
+        Relationships: [];
+      };
+      knowledge_base: {
+        Row: {
+          id: string;
+          title: string;
+          category: string | null;
+          content: string | null;
+          last_updated: string | null;
+          updated_at: string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['knowledge_base']['Row']>;
+        Update: Partial<Database['public']['Tables']['knowledge_base']['Row']>;
+        Relationships: [];
+      };
+      staff_profiles: {
+        Row: {
+          id: string;
+          name: string;
+          position: string | null;
+          department: string | null;
+          email: string | null;
+          phone: string | null;
+          photo: string | null;
+          join_date: string | null;
+          status: string | null;
+          shift: string | null;
+          performance: number | null;
+          notes: string | null;
+          skills: Json | null;
+          schedule: Json | null;
+          metrics: Json | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['staff_profiles']['Row']>;
+        Update: Partial<Database['public']['Tables']['staff_profiles']['Row']>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+}
 export type UUID = string;
 
 export interface GuestPreferences {
-  dining: string[];
-  activities: string[];
-  roomService: string[];
+  dining?: string[];
+  activities?: string[];
+  roomService?: string[];
+}
+
+export interface GuestSummary {
+  id: UUID;
+  type: string;
+  title: string;
+  content: string;
+  keyPoints?: string[];
+  confidenceScore?: number;
+  createdAt?: string | null;
+}
+
+export interface GuestEntity {
+  id: UUID;
+  name: string;
+  entityType: string;
+  category: string;
+  metadata?: Record<string, unknown>;
+  confidenceScore?: number;
+  createdAt?: string | null;
 }
 
 export interface GuestProfile {
   id: UUID;
   name: string;
+  displayName?: string | null;
+  username?: string | null;
   email: string;
   phone: string;
   nationality: string;
   language: string;
   vipStatus: string;
   visitCount: number;
+  loyaltyPoints: number;
   lastVisit: string | null;
   roomPreferences: string;
   dietaryRestrictions: string | null;
@@ -26,6 +278,8 @@ export interface GuestProfile {
   checkIn: string | null;
   checkOut: string | null;
   preferences: GuestPreferences;
+  summary: GuestSummary[];
+  entities: GuestEntity[];
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -181,73 +435,3 @@ export interface GuestAISummary {
   lastUpdated: string;
   updated_at?: string | null;
 }
-
-export interface Database {
-  public: {
-    Tables: {
-      guest_profiles: {
-        Row: GuestProfile;
-        Insert: Omit<GuestProfile, 'id' | 'created_at'> & {
-          id?: UUID;
-          created_at?: string | null;
-        };
-        Update: Partial<Omit<GuestProfile, 'id'>>;
-      };
-      staff_profiles: {
-        Row: StaffProfile;
-        Insert: Omit<StaffProfile, 'id' | 'created_at'> & {
-          id?: UUID;
-          created_at?: string | null;
-        };
-        Update: Partial<Omit<StaffProfile, 'id'>>;
-      };
-      rooms: {
-        Row: Room;
-        Insert: Omit<Room, 'updated_at'> & { updated_at?: string | null };
-        Update: Partial<Omit<Room, 'roomNumber'>>;
-      };
-      guest_requests: {
-        Row: GuestRequest;
-        Insert: Omit<GuestRequest, 'id' | 'created_at'> & {
-          id?: UUID;
-          created_at?: string | null;
-        };
-        Update: Partial<Omit<GuestRequest, 'id'>>;
-      };
-      menu_items: {
-        Row: MenuItem;
-        Insert: Omit<MenuItem, 'id' | 'updated_at'> & {
-          id?: UUID;
-          updated_at?: string | null;
-        };
-        Update: Partial<Omit<MenuItem, 'id'>>;
-      };
-      knowledge_base: {
-        Row: KnowledgeBaseItem;
-        Insert: Omit<KnowledgeBaseItem, 'id' | 'updated_at'> & {
-          id?: UUID;
-          updated_at?: string | null;
-        };
-        Update: Partial<Omit<KnowledgeBaseItem, 'id'>>;
-      };
-      notifications: {
-        Row: Notification;
-        Insert: Omit<Notification, 'id' | 'created_at'> & {
-          id?: UUID;
-          created_at?: string | null;
-        };
-        Update: Partial<Omit<Notification, 'id'>>;
-      };
-      guest_ai_summaries: {
-        Row: GuestAISummary;
-        Insert: Omit<GuestAISummary, 'id' | 'updated_at'> & {
-          id?: UUID;
-          updated_at?: string | null;
-        };
-        Update: Partial<Omit<GuestAISummary, 'id'>>;
-      };
-    };
-  };
-}
-
-export type TableName = keyof Database['public']['Tables'];

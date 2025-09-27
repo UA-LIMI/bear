@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Sheet,
   SheetContent,
@@ -476,112 +477,137 @@ export const GuestProfilesModule = () => {
           <div className="flex-1">
             {selectedGuest ? (
               <Card className="h-full">
-                <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <CardTitle className="text-xl">{selectedGuest.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Room {selectedGuest.currentRoom ?? '—'} · {selectedGuest.language}
-                    </p>
+                <Tabs defaultValue="overview" className="flex h-full flex-col">
+                  <div className="flex flex-col gap-4 border-b p-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                        {selectedGuest.name}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Room {selectedGuest.currentRoom ?? '—'} · {selectedGuest.language}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 lg:items-end">
+                      <Button variant="outline" onClick={handleOpenEdit}>
+                        Edit profile
+                      </Button>
+                      <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                        <div className="rounded-md border p-3">
+                          <p className="text-xs uppercase tracking-wide">Loyalty points</p>
+                          <p className="text-lg font-semibold text-foreground">
+                            {selectedGuest.loyaltyPoints}
+                          </p>
+                        </div>
+                        <div className="rounded-md border p-3">
+                          <p className="text-xs uppercase tracking-wide">Visit count</p>
+                          <p className="text-lg font-semibold text-foreground">
+                            {selectedGuest.visitCount}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <Button variant="outline" onClick={handleOpenEdit}>
-                    Edit profile
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <section className="space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      Contact
-                    </h2>
-                    <dl className="space-y-1 text-sm text-muted-foreground">
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>Email</dt>
-                        <dd className="text-foreground">{selectedGuest.email}</dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>Phone</dt>
-                        <dd className="text-foreground">{selectedGuest.phone || '—'}</dd>
-                      </div>
-                    </dl>
-                  </section>
 
-                  <Separator />
+                  <div className="border-b px-6 pb-0 pt-4">
+                    <TabsList className="grid w-full gap-2 bg-transparent p-0 text-muted-foreground sm:w-auto sm:grid-cols-3">
+                      <TabsTrigger value="overview" className="data-[state=active]:bg-background">
+                        Overview
+                      </TabsTrigger>
+                      <TabsTrigger value="summaries" className="data-[state=active]:bg-background">
+                        AI summaries
+                        <Badge variant="secondary" className="ml-2">
+                          {selectedGuest.summary.length}
+                        </Badge>
+                      </TabsTrigger>
+                      <TabsTrigger value="intelligence" className="data-[state=active]:bg-background">
+                        Guest intelligence
+                        <Badge variant="secondary" className="ml-2">
+                          {selectedGuest.entities.length}
+                        </Badge>
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
 
-                  <section className="space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      Stay details
-                    </h2>
-                    <dl className="space-y-1 text-sm text-muted-foreground">
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>Check-in</dt>
-                        <dd className="text-foreground">{formatDate(selectedGuest.checkIn)}</dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>Check-out</dt>
-                        <dd className="text-foreground">{formatDate(selectedGuest.checkOut)}</dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>Loyalty points</dt>
-                        <dd className="text-foreground">{selectedGuest.loyaltyPoints}</dd>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <dt>Visit count</dt>
-                        <dd className="text-foreground">{selectedGuest.visitCount}</dd>
-                      </div>
-                    </dl>
-                  </section>
-
-                  <Separator />
-
-                  <section className="space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      Preferences
-                    </h2>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li>
-                        <span className="font-medium text-foreground">Dining:</span>{' '}
-                        {(selectedGuest.preferences.dining ?? []).join(', ') || '—'}
-                      </li>
-                      <li>
-                        <span className="font-medium text-foreground">Activities:</span>{' '}
-                        {(selectedGuest.preferences.activities ?? []).join(', ') || '—'}
-                      </li>
-                      <li>
-                        <span className="font-medium text-foreground">Room service:</span>{' '}
-                        {(selectedGuest.preferences.roomService ?? []).join(', ') || '—'}
-                      </li>
-                    </ul>
-                  </section>
-
-                  {selectedGuest.notes && (
-                    <>
-                      <Separator />
-                      <section className="space-y-2">
-                        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                          Notes
-                        </h2>
-                        <p className="text-sm text-muted-foreground">{selectedGuest.notes}</p>
+                  <div className="flex-1 overflow-y-auto px-6 py-6">
+                    <TabsContent value="overview" className="space-y-6">
+                      <section className="space-y-3">
+                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                          Contact
+                        </h3>
+                        <dl className="space-y-2 text-sm text-muted-foreground">
+                          <div className="flex items-center justify-between gap-2">
+                            <dt>Email</dt>
+                            <dd className="text-foreground">{selectedGuest.email}</dd>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <dt>Phone</dt>
+                            <dd className="text-foreground">{selectedGuest.phone || '—'}</dd>
+                          </div>
+                        </dl>
                       </section>
-                    </>
-                  )}
 
-                  <Separator />
+                      <Separator />
 
-                  <section className="space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      AI summaries
-                    </h2>
-                    <SummaryList items={selectedGuest.summary} />
-                  </section>
+                      <section className="space-y-3">
+                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                          Stay details
+                        </h3>
+                        <dl className="space-y-2 text-sm text-muted-foreground">
+                          <div className="flex items-center justify-between gap-2">
+                            <dt>Check-in</dt>
+                            <dd className="text-foreground">{formatDate(selectedGuest.checkIn)}</dd>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <dt>Check-out</dt>
+                            <dd className="text-foreground">{formatDate(selectedGuest.checkOut)}</dd>
+                          </div>
+                        </dl>
+                      </section>
 
-                  <Separator />
+                      <Separator />
 
-                  <section className="space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      Guest intelligence
-                    </h2>
-                    <EntityList items={selectedGuest.entities} />
-                  </section>
-                </CardContent>
+                      <section className="space-y-3">
+                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                          Preferences
+                        </h3>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li>
+                            <span className="font-medium text-foreground">Dining:</span>{' '}
+                            {(selectedGuest.preferences.dining ?? []).join(', ') || '—'}
+                          </li>
+                          <li>
+                            <span className="font-medium text-foreground">Activities:</span>{' '}
+                            {(selectedGuest.preferences.activities ?? []).join(', ') || '—'}
+                          </li>
+                          <li>
+                            <span className="font-medium text-foreground">Room service:</span>{' '}
+                            {(selectedGuest.preferences.roomService ?? []).join(', ') || '—'}
+                          </li>
+                        </ul>
+                      </section>
+
+                      {selectedGuest.notes && (
+                        <>
+                          <Separator />
+                          <section className="space-y-2">
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                              Notes
+                            </h3>
+                            <p className="text-sm text-muted-foreground">{selectedGuest.notes}</p>
+                          </section>
+                        </>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="summaries" className="space-y-3">
+                      <SummaryList items={selectedGuest.summary} />
+                    </TabsContent>
+
+                    <TabsContent value="intelligence" className="space-y-3">
+                      <EntityList items={selectedGuest.entities} />
+                    </TabsContent>
+                  </div>
+                </Tabs>
               </Card>
             ) : (
               <p className="text-sm text-muted-foreground">Select a guest to view details.</p>

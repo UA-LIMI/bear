@@ -1,4 +1,4 @@
-import type { GuestRequest, GuestRequestMessage } from '@/lib/types/supabase';
+import type { Database, GuestRequest, GuestRequestMessage } from '@/lib/types/supabase';
 import {
   getSupabaseClient,
   isSupabaseConfigured,
@@ -7,24 +7,40 @@ import {
 } from '@/lib/supabase';
 import { getGuestRequestsFixture } from '@/lib/fixtures';
 
-interface GuestRequestRow {
-  id: string;
-  guest_id: string | null;
-  room_number: string | null;
-  guest_name: string | null;
-  request_type: string | null;
-  status: string | null;
-  priority: string | null;
-  message: string | null;
-  conversation: GuestRequestMessage[] | null;
-  scheduled: boolean | null;
-  scheduled_for: string | null;
-  assigned_staff: string | null;
-  ai_suggestion: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  timestamp: string | null;
-}
+type GuestRequestRow = Database['public']['Tables']['guest_requests']['Row'];
+
+const parseConversation = (conversation: GuestRequestRow['conversation']): GuestRequestMessage[] => {
+  if (!Array.isArray(conversation)) {
+    return [];
+  }
+
+  return conversation
+    .map(item => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+
+      const record = item as Record<string, unknown>;
+      const sender = record.sender;
+      const message = record.message;
+      const timestamp = record.timestamp;
+
+      if (
+        (sender === 'guest' || sender === 'staff') &&
+        typeof message === 'string' &&
+        typeof timestamp === 'string'
+      ) {
+        return {
+          sender,
+          message,
+          timestamp,
+        } satisfies GuestRequestMessage;
+      }
+
+      return null;
+    })
+    .filter((item): item is GuestRequestMessage => item !== null);
+};
 
 const mapGuestRequest = (row: GuestRequestRow): GuestRequest => ({
   id: row.id,
@@ -40,7 +56,7 @@ const mapGuestRequest = (row: GuestRequestRow): GuestRequest => ({
   scheduledFor: row.scheduled_for ?? null,
   assignedStaff: row.assigned_staff ?? null,
   aiSuggestion: row.ai_suggestion ?? null,
-  conversation: row.conversation ?? [],
+  conversation: parseConversation(row.conversation),
   created_at: row.created_at ?? null,
   updated_at: row.updated_at ?? null,
 });

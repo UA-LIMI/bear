@@ -10,6 +10,7 @@ const guestProfiles: GuestProfile[] = [
     language: 'English',
     vipStatus: 'Gold',
     visitCount: 5,
+    loyaltyPoints: 1200,
     lastVisit: '2023-08-15',
     roomPreferences: 'High floor, away from elevator, extra pillows',
     dietaryRestrictions: 'No shellfish, prefers low-carb options',
@@ -26,6 +27,8 @@ const guestProfiles: GuestProfile[] = [
       activities: ['Spa', 'Golf', 'Business center'],
       roomService: ['Breakfast', 'Evening turndown service'],
     },
+    summary: [],
+    entities: [],
     created_at: '2023-01-10T12:00:00Z',
   },
   {
@@ -37,6 +40,7 @@ const guestProfiles: GuestProfile[] = [
     language: 'English',
     vipStatus: 'Platinum',
     visitCount: 8,
+    loyaltyPoints: 2150,
     lastVisit: '2023-09-21',
     roomPreferences: 'Corner suite, hypoallergenic bedding, workspace with monitor',
     dietaryRestrictions: 'Vegetarian',
@@ -53,6 +57,8 @@ const guestProfiles: GuestProfile[] = [
       activities: ['Fitness center', 'In-room spa'],
       roomService: ['Breakfast', 'Evening tea service'],
     },
+    summary: [],
+    entities: [],
     created_at: '2022-06-05T08:30:00Z',
   },
 ];

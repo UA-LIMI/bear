@@ -4,6 +4,10 @@ import { createOpenAI } from '@ai-sdk/openai';
 
 export const runtime = 'edge';
 
+export async function GET() {
+  return NextResponse.json({ completion: '' });
+}
+
 export async function POST(req: Request) {
   const { prompt, guest } = await req.json();
 

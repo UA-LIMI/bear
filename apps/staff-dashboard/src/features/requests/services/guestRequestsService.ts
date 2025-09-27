@@ -1,4 +1,4 @@
-import type { GuestRequest } from '@/lib/types/supabase';
+import type { GuestRequest, GuestRequestMessage } from '@/lib/types/supabase';
 import {
   getSupabaseClient,
   isSupabaseConfigured,
@@ -6,6 +6,53 @@ import {
   type SubscriptionCleanup,
 } from '@/lib/supabase';
 import { getGuestRequestsFixture } from '@/lib/fixtures';
+
+interface GuestRequestRow {
+  id: string;
+  guest_id: string | null;
+  room_number: string | null;
+  guest_name: string | null;
+  request_type: string | null;
+  status: string | null;
+  priority: string | null;
+  message: string | null;
+  conversation: GuestRequestMessage[] | null;
+  scheduled: boolean | null;
+  scheduled_for: string | null;
+  assigned_staff: string | null;
+  ai_suggestion: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  timestamp: string | null;
+}
+
+const mapGuestRequest = (row: GuestRequestRow): GuestRequest => ({
+  id: row.id,
+  roomNumber: row.room_number ?? '—',
+  guestName: row.guest_name ?? 'Guest',
+  guestId: row.guest_id,
+  type: row.request_type ?? 'general',
+  status: (row.status as GuestRequest['status']) ?? 'pending',
+  priority: (row.priority as GuestRequest['priority']) ?? 'normal',
+  timestamp: row.timestamp ?? row.created_at ?? new Date().toISOString(),
+  message: row.message ?? '',
+  scheduled: row.scheduled ?? false,
+  scheduledFor: row.scheduled_for ?? null,
+  assignedStaff: row.assigned_staff ?? null,
+  aiSuggestion: row.ai_suggestion ?? null,
+  conversation: row.conversation ?? [],
+  created_at: row.created_at ?? null,
+  updated_at: row.updated_at ?? null,
+});
+
+const isGuestRequestRow = (payload: unknown): payload is GuestRequestRow => {
+  if (!payload || typeof payload !== 'object') {
+    return false;
+  }
+
+  const record = payload as Partial<GuestRequestRow>;
+  return typeof record.id === 'string';
+};
 
 export const fetchGuestRequests = async (): Promise<GuestRequest[]> => {
   if (!isSupabaseConfigured()) {
@@ -19,14 +66,17 @@ export const fetchGuestRequests = async (): Promise<GuestRequest[]> => {
 
   const { data, error } = await client
     .from('guest_requests')
-    .select('*')
-    .order('timestamp', { ascending: false });
+    .select(
+      'id, guest_id, room_number, guest_name, request_type, status, priority, message, conversation, scheduled, scheduled_for, assigned_staff, ai_suggestion, created_at, updated_at, timestamp'
+    )
+    .order('timestamp', { ascending: false })
+    .order('created_at', { ascending: false });
 
   if (error) {
     throw error;
   }
 
-  return (data ?? []) as GuestRequest[];
+  return (data ?? []).map(mapGuestRequest);
 };
 
 export const registerGuestRequestSubscription = (
@@ -41,5 +91,11 @@ export const registerGuestRequestSubscription = (
     return null;
   }
 
-  return subscribeToGuestRequests(client, onRequest);
+  return subscribeToGuestRequests(client, payload => {
+    if (!isGuestRequestRow(payload)) {
+      return;
+    }
+
+    onRequest(mapGuestRequest(payload));
+  });
 };

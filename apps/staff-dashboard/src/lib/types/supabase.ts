@@ -27,6 +27,7 @@ export interface GuestProfile {
   checkOut: string | null;
   preferences: GuestPreferences;
   created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export type StaffStatus = 'on duty' | 'on break' | 'off duty';
@@ -112,6 +113,7 @@ export interface GuestRequest {
   id: UUID;
   roomNumber: string;
   guestName: string;
+  guestId?: UUID | null;
   type: string;
   status: RequestStatus;
   priority: RequestPriority;
@@ -123,6 +125,7 @@ export interface GuestRequest {
   aiSuggestion?: string | null;
   conversation: GuestRequestMessage[];
   created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface MenuItem {

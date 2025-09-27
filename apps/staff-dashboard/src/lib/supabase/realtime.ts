@@ -1,5 +1,4 @@
 import type { TypedSupabaseClient } from './client';
-import type { GuestRequest, Room, Notification } from '@/lib/types/supabase';
 
 type UnsubscribeResult = Promise<'ok' | 'timed out' | 'error'>;
 
@@ -9,12 +8,12 @@ const channelKey = (table: string) => `public:${table}`;
 
 export const subscribeToGuestRequests = (
   client: TypedSupabaseClient,
-  handler: (payload: GuestRequest) => void
+  handler: (payload: Record<string, unknown>) => void
 ): SubscriptionCleanup => {
   const channel = client
     .channel(channelKey('guest_requests'))
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'guest_requests' }, payload => {
-      const record = payload.new as GuestRequest | null;
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_requests' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
       if (record) {
         handler(record);
       }
@@ -26,12 +25,12 @@ export const subscribeToGuestRequests = (
 
 export const subscribeToRoomUpdates = (
   client: TypedSupabaseClient,
-  handler: (payload: Room) => void
+  handler: (payload: Record<string, unknown>) => void
 ): SubscriptionCleanup => {
   const channel = client
     .channel(channelKey('rooms'))
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms' }, payload => {
-      const record = payload.new as Room | null;
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
       if (record) {
         handler(record);
       }
@@ -43,20 +42,88 @@ export const subscribeToRoomUpdates = (
 
 export const subscribeToNotifications = (
   client: TypedSupabaseClient,
-  handler: (payload: Notification) => void
+  handler: (payload: Record<string, unknown>) => void
 ): SubscriptionCleanup => {
   const channel = client
     .channel(channelKey('notifications'))
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'notifications' },
+      { event: '*', schema: 'public', table: 'notifications' },
       payload => {
-        const record = payload.new as Notification | null;
+        const record = payload.new as Record<string, unknown> | null;
         if (record) {
           handler(record);
         }
       }
     )
+    .subscribe();
+
+  return () => channel.unsubscribe();
+};
+
+export const subscribeToGuestProfiles = (
+  client: TypedSupabaseClient,
+  handler: (payload: Record<string, unknown>) => void
+): SubscriptionCleanup => {
+  const channel = client
+    .channel(channelKey('guest_profiles'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_profiles' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
+      if (record) {
+        handler(record);
+      }
+    })
+    .subscribe();
+
+  return () => channel.unsubscribe();
+};
+
+export const subscribeToStaffProfiles = (
+  client: TypedSupabaseClient,
+  handler: (payload: Record<string, unknown>) => void
+): SubscriptionCleanup => {
+  const channel = client
+    .channel(channelKey('staff_profiles'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_profiles' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
+      if (record) {
+        handler(record);
+      }
+    })
+    .subscribe();
+
+  return () => channel.unsubscribe();
+};
+
+export const subscribeToMenuItems = (
+  client: TypedSupabaseClient,
+  handler: (payload: Record<string, unknown>) => void
+): SubscriptionCleanup => {
+  const channel = client
+    .channel(channelKey('menu_items'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
+      if (record) {
+        handler(record);
+      }
+    })
+    .subscribe();
+
+  return () => channel.unsubscribe();
+};
+
+export const subscribeToKnowledgeBase = (
+  client: TypedSupabaseClient,
+  handler: (payload: Record<string, unknown>) => void
+): SubscriptionCleanup => {
+  const channel = client
+    .channel(channelKey('knowledge_base'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'knowledge_base' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
+      if (record) {
+        handler(record);
+      }
+    })
     .subscribe();
 
   return () => channel.unsubscribe();

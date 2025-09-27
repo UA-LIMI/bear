@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 
 import './globals.css';
+import 'reshaped/themes/slate/theme.css';
+
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ReshapedProvider } from '@/components/providers/reshaped-provider';
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateText } from 'ai';
+import { google } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 
 export const runtime = 'edge';
@@ -12,19 +13,18 @@ export async function POST(req: Request) {
   try {
     const { prompt, guest } = await req.json();
 
-    const apiKey = process.env.AI_GATEWAY_API_KEY ?? process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    const geminiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? process.env.GOOGLE_API_KEY;
+    const openAIApiKey = process.env.AI_GATEWAY_API_KEY ?? process.env.OPENAI_API_KEY;
+
+    if (!geminiApiKey && !openAIApiKey) {
       return NextResponse.json(
-        { error: 'AI_GATEWAY_API_KEY or OPENAI_API_KEY must be configured.' },
+        {
+          error:
+            'GOOGLE_GENERATIVE_AI_API_KEY (or GOOGLE_API_KEY) or AI_GATEWAY_API_KEY / OPENAI_API_KEY must be configured.',
+        },
         { status: 500 },
       );
     }
-
-    const baseURL = process.env.AI_GATEWAY_URL;
-    const openai = createOpenAI({
-      apiKey,
-      baseURL,
-    });
 
     const systemPrompt = `You are LIMI's hospitality AI concierge. Craft concise, actionable insights for staff.`;
 
@@ -40,17 +40,51 @@ export async function POST(req: Request) {
       guestContext = 'Guest data unavailable (serialization error).';
     }
 
-    const { text } = await generateText({
-      model: openai(process.env.OPENAI_MODEL ?? 'gpt-4o-mini'),
-      system: systemPrompt,
-      prompt: `Guest profile data:
+    const promptPayload = `Guest profile data:
 ${guestContext}
 
 Instruction:
-${userPrompt}`,
-    });
+${userPrompt}`;
 
-    return NextResponse.json({ completion: text });
+    if (geminiApiKey) {
+      const { text } = await generateText({
+        model: google(process.env.GOOGLE_GEMINI_MODEL ?? 'gemini-2.5-flash'),
+        system: systemPrompt,
+        prompt: promptPayload,
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              thinkingBudget: 8192,
+              includeThoughts: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({ completion: text });
+    }
+
+    if (openAIApiKey) {
+      const openai = createOpenAI({
+        apiKey: openAIApiKey,
+        baseURL: process.env.AI_GATEWAY_URL,
+      });
+
+      const { text } = await generateText({
+        model: openai(process.env.OPENAI_MODEL ?? 'gpt-4o-mini'),
+        system: systemPrompt,
+        prompt: promptPayload,
+      });
+
+      return NextResponse.json({ completion: text });
+    }
+
+    return NextResponse.json(
+      {
+        error: 'Unable to generate guest insight because no compatible provider is configured.',
+      },
+      { status: 500 },
+    );
   } catch (error) {
     console.error('Guest insight generation failed.', error);
     return NextResponse.json(

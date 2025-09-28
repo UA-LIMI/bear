@@ -4,7 +4,7 @@ import { generateText } from 'ai';
 export const runtime = 'edge';
 
 const DEFAULT_PROMPT = 'Invent a new holiday and describe its traditions.';
-const DEFAULT_MODEL = process.env.AI_MODEL ?? 'google/gemini-1.5-flash-latest';
+const DEFAULT_MODEL = process.env.AI_MODEL ?? 'google/gemini-2.5-flash';
 
 export async function GET() {
   return NextResponse.json({ completion: '' });

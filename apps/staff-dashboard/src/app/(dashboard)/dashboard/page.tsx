@@ -522,17 +522,17 @@ export default function DashboardPage() {
   const occupiedRooms = useMemo(() => rooms.filter(room => room.status === 'occupied'), [rooms]);
   const occupancyRate = rooms.length === 0 ? 0 : Math.round((occupiedRooms.length / rooms.length) * 100);
 
-  const arrivalsToday = useMemo(
-    () =>
-      guests.filter(guest => guest.checkIn && new Date(guest.checkIn).toDateString() === new Date().toDateString()).length,
-    [guests],
-  );
+  const arrivalsToday = useMemo(() => {
+    if (!isHydrated) return null;
+    const today = new Date().toDateString();
+    return guests.filter(guest => guest.checkIn && new Date(guest.checkIn).toDateString() === today).length;
+  }, [guests, isHydrated]);
 
-  const departuresToday = useMemo(
-    () =>
-      guests.filter(guest => guest.checkOut && new Date(guest.checkOut).toDateString() === new Date().toDateString()).length,
-    [guests],
-  );
+  const departuresToday = useMemo(() => {
+    if (!isHydrated) return null;
+    const today = new Date().toDateString();
+    return guests.filter(guest => guest.checkOut && new Date(guest.checkOut).toDateString() === today).length;
+  }, [guests, isHydrated]);
 
   const estimatedRevenue = useMemo(
     () => guests.reduce((total, guest) => total + (guest.loyaltyPoints ?? 0) * 18, 0),
@@ -552,7 +552,12 @@ export default function DashboardPage() {
       title: 'Occupancy rate',
       value: formatPercentage(occupancyRate),
       helper: `${occupiedRooms.length} of ${rooms.length} rooms occupied`,
-      trend: arrivalsToday > departuresToday ? 'Positive pickup vs. departures' : 'Monitor checkout volume',
+      trend:
+        arrivalsToday != null && departuresToday != null
+          ? arrivalsToday > departuresToday
+            ? 'Positive pickup vs. departures'
+            : 'Monitor checkout volume'
+          : 'Monitoring arrivals/departures',
       emphasize: true,
     },
     {
@@ -655,12 +660,12 @@ export default function DashboardPage() {
             <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
               <div className="rounded-md border p-3">
                 <p className="text-xs uppercase tracking-wide">Arrivals today</p>
-                <p className="text-lg font-semibold text-foreground">{arrivalsToday}</p>
+                <p className="text-lg font-semibold text-foreground">{arrivalsToday ?? '—'}</p>
                 <p className="text-xs text-muted-foreground">Coordinate welcome amenities.</p>
               </div>
               <div className="rounded-md border p-3">
                 <p className="text-xs uppercase tracking-wide">Departures today</p>
-                <p className="text-lg font-semibold text-foreground">{departuresToday}</p>
+                <p className="text-lg font-semibold text-foreground">{departuresToday ?? '—'}</p>
                 <p className="text-xs text-muted-foreground">Plan express checkout support.</p>
               </div>
             </CardContent>

@@ -11,7 +11,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { prompt, guest } = await req.json();
+    const { prompt } = await req.json().catch(() => ({ prompt: undefined }));
 
     const geminiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? process.env.GOOGLE_API_KEY;
     const openAIApiKey = process.env.AI_GATEWAY_API_KEY ?? process.env.OPENAI_API_KEY;
@@ -26,42 +26,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const systemPrompt = `You are LIMI's hospitality AI concierge. Craft concise, actionable insights for staff.`;
-
-    const userPrompt = typeof prompt === 'string' && prompt.trim().length > 0
-      ? prompt
-      : 'Summarize the guest context and suggest the next best action.';
-
-    let guestContext = '';
-    try {
-      guestContext = JSON.stringify(guest, null, 2);
-    } catch (jsonError) {
-      console.error('Failed to serialize guest payload for insight prompt.', jsonError);
-      guestContext = 'Guest data unavailable (serialization error).';
-    }
-
-    const promptPayload = `Guest profile data:
-${guestContext}
-
-Instruction:
-${userPrompt}`;
+    const defaultPrompt = 'Write a haiku about hospitality operations.';
+    const userPrompt = typeof prompt === 'string' && prompt.trim().length > 0 ? prompt : defaultPrompt;
 
     if (geminiApiKey) {
+      const modelId = process.env.GOOGLE_GEMINI_MODEL ?? 'models/gemini-1.5-flash-latest';
       const { text } = await generateText({
-        model: google(process.env.GOOGLE_GEMINI_MODEL ?? 'gemini-2.5-flash'),
-        system: systemPrompt,
-        prompt: promptPayload,
-        providerOptions: {
-          google: {
-            thinkingConfig: {
-              thinkingBudget: 8192,
-              includeThoughts: true,
-            },
-          },
-        },
+        model: google(modelId),
+        prompt: userPrompt,
       });
 
-      return NextResponse.json({ completion: text });
+      return NextResponse.json({ completion: text, model: modelId, provider: 'google' });
     }
 
     if (openAIApiKey) {
@@ -70,13 +45,13 @@ ${userPrompt}`;
         baseURL: process.env.AI_GATEWAY_URL,
       });
 
+      const modelId = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
       const { text } = await generateText({
-        model: openai(process.env.OPENAI_MODEL ?? 'gpt-4o-mini'),
-        system: systemPrompt,
-        prompt: promptPayload,
+        model: openai(modelId),
+        prompt: userPrompt,
       });
 
-      return NextResponse.json({ completion: text });
+      return NextResponse.json({ completion: text, model: modelId, provider: 'openai' });
     }
 
     return NextResponse.json(

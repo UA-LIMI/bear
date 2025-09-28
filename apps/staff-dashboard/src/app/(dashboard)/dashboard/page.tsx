@@ -514,10 +514,10 @@ export default function DashboardPage() {
   );
 
   const averageRequestAge = useMemo(() => {
-    if (requests.length === 0) return 0;
+    if (!isHydrated || requests.length === 0) return null;
     const totalMinutes = requests.reduce((total, request) => total + minutesSince(request.timestamp), 0);
     return Math.max(1, Math.round(totalMinutes / requests.length));
-  }, [requests]);
+  }, [isHydrated, requests]);
 
   const occupiedRooms = useMemo(() => rooms.filter(room => room.status === 'occupied'), [rooms]);
   const occupancyRate = rooms.length === 0 ? 0 : Math.round((occupiedRooms.length / rooms.length) * 100);
@@ -562,7 +562,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Avg. request age',
-      value: `${averageRequestAge}m`,
+      value: averageRequestAge != null ? `${averageRequestAge}m` : '—',
       helper: 'Time since creation across active tickets',
     },
     {

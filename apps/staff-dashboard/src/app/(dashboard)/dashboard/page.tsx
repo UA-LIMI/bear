@@ -67,13 +67,20 @@ const minutesSince = (timestamp: string) => Math.round((Date.now() - new Date(ti
 
 const asTitle = (value: string) => value.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
-const useDashboardAIBrief = (payload: Record<string, unknown>) => {
+const useDashboardAIBrief = (payload: Record<string, unknown> | null) => {
   const [brief, setBrief] = useState<AIBrief | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const payloadJson = useMemo(() => JSON.stringify(payload), [payload]);
 
   useEffect(() => {
+    if (!payload) {
+      setBrief(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const controller = new AbortController();
 
     const run = async () => {
@@ -86,7 +93,7 @@ const useDashboardAIBrief = (payload: Record<string, unknown>) => {
           body: JSON.stringify({
             prompt:
               'You are a hotel general manager assistant. Provide a concise leadership briefing summarizing property performance and list three recommended actions prefixed with "-".',
-            guest: JSON.parse(payloadJson),
+            guest: payload,
           }),
           signal: controller.signal,
         });
@@ -120,7 +127,7 @@ const useDashboardAIBrief = (payload: Record<string, unknown>) => {
 
     run();
     return () => controller.abort();
-  }, [payloadJson]);
+  }, [payloadJson, payload]);
 
   return { brief, loading, error };
 };
@@ -194,9 +201,11 @@ const AIBriefingPanel = ({ brief, loading, error }: { brief: AIBrief | null; loa
 const RequestCommandCenter = ({
   requests,
   isLoading,
+  showRelativeTimes,
 }: {
   requests: ReturnType<typeof useGuestRequests>['requests'];
   isLoading: boolean;
+  showRelativeTimes: boolean;
 }) => {
   const grouped = useMemo(() => {
     const map = new Map<string, ReturnType<typeof useGuestRequests>['requests']>();
@@ -241,7 +250,9 @@ const RequestCommandCenter = ({
                     <p className="mt-2 text-sm text-foreground">{item.message}</p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span>Assigned: {item.assignedStaff ?? 'Unassigned'}</span>
-                      <span>Age: {minutesSince(item.timestamp)} min</span>
+                      <span>
+                        Age: {showRelativeTimes ? `${minutesSince(item.timestamp)} min` : '—'}
+                      </span>
                       {item.scheduled && <Badge variant="outline">Scheduled</Badge>}
                     </div>
                   </div>
@@ -472,6 +483,11 @@ export default function DashboardPage() {
   const { requests, isLoading: requestsLoading } = useGuestRequests();
   const { rooms, isLoading: roomsLoading } = useRooms();
   const guests = useGuestProfiles();
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const isLoading = requestsLoading || roomsLoading;
 
@@ -558,6 +574,46 @@ export default function DashboardPage() {
     },
   ];
 
+  if (!isHydrated) {
+    return (
+      <div className="flex flex-col gap-6">
+        <ExecutiveSnapshot metrics={metrics} isLoading={true} />
+        <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+          <div className="space-y-6">
+            <AIBriefingPanel brief={null} loading={true} error={null} />
+            <RequestCommandCenter requests={pendingRequests} isLoading={true} showRelativeTimes={false} />
+            <AutomationLogCard />
+          </div>
+          <div className="space-y-6">
+            <OccupancyHealthCard occupiedRooms={0} totalRooms={rooms.length} housekeepingBacklog={0} />
+            <GuestIntelligenceSpotlight guests={guests} />
+            <QuickActionsPanel />
+            <Card>
+              <CardHeader>
+                <CardTitle>Arrivals & departures</CardTitle>
+                <CardDescription>Guest flow today to prep concierge touchpoints.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+                <div className="rounded-md border p-3">
+                  <p className="text-xs uppercase tracking-wide">Arrivals today</p>
+                  <p className="text-lg font-semibold text-foreground">—</p>
+                  <p className="text-xs text-muted-foreground">Coordinate welcome amenities.</p>
+                </div>
+                <div className="rounded-md border p-3">
+                  <p className="text-xs uppercase tracking-wide">Departures today</p>
+                  <p className="text-lg font-semibold text-foreground">—</p>
+                  <p className="text-xs text-muted-foreground">Plan express checkout support.</p>
+                </div>
+              </CardContent>
+            </Card>
+            <ChannelMixCard />
+            <StaffCoverageCard />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <ExecutiveSnapshot metrics={metrics} isLoading={isLoading} />
@@ -565,7 +621,11 @@ export default function DashboardPage() {
       <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
           <AIBriefingPanel brief={aiBrief} loading={aiLoading} error={aiError} />
-          <RequestCommandCenter requests={pendingRequests} isLoading={isLoading} />
+          <RequestCommandCenter
+            requests={pendingRequests}
+            isLoading={isLoading}
+            showRelativeTimes={isHydrated}
+          />
           <AutomationLogCard />
         </div>
 

@@ -1,70 +1,61 @@
 import { NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
-import { createOpenAI } from '@ai-sdk/openai';
 
 export const runtime = 'edge';
+
+const DEFAULT_PROMPT = 'Invent a new holiday and describe its traditions.';
+const DEFAULT_MODEL = process.env.AI_MODEL ?? 'google/gemini-1.5-flash-latest';
 
 export async function GET() {
   return NextResponse.json({ completion: '' });
 }
 
 export async function POST(req: Request) {
+  const requestId = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+  console.info('[guest-insight] request received', { requestId });
+
   try {
     const { prompt } = await req.json().catch(() => ({ prompt: undefined }));
+    const aiGatewayKey = process.env.AI_GATEWAY_API_KEY ?? process.env.VERCEL_AI_API_KEY;
 
-    const geminiApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? process.env.GOOGLE_API_KEY;
-    const openAIApiKey = process.env.AI_GATEWAY_API_KEY ?? process.env.OPENAI_API_KEY;
-
-    if (!geminiApiKey && !openAIApiKey) {
+    if (!aiGatewayKey) {
+      console.error('[guest-insight] missing AI gateway key', { requestId });
       return NextResponse.json(
         {
-          error:
-            'GOOGLE_GENERATIVE_AI_API_KEY (or GOOGLE_API_KEY) or AI_GATEWAY_API_KEY / OPENAI_API_KEY must be configured.',
+          error: 'AI gateway API key is not configured.',
+          requestId,
         },
         { status: 500 },
       );
     }
 
-    const defaultPrompt = 'Write a haiku about hospitality operations.';
-    const userPrompt = typeof prompt === 'string' && prompt.trim().length > 0 ? prompt : defaultPrompt;
+    const userPrompt =
+      typeof prompt === 'string' && prompt.trim().length > 0 ? prompt : DEFAULT_PROMPT;
 
-    if (geminiApiKey) {
-      const modelId = process.env.GOOGLE_GEMINI_MODEL ?? 'models/gemini-1.5-flash-latest';
-      const { text } = await generateText({
-        model: google(modelId),
-        prompt: userPrompt,
-      });
+    console.info('[guest-insight] invoking model', {
+      requestId,
+      model: DEFAULT_MODEL,
+      promptPreview: userPrompt.slice(0, 80),
+    });
 
-      return NextResponse.json({ completion: text, model: modelId, provider: 'google' });
-    }
+    const { text } = await generateText({
+      model: DEFAULT_MODEL,
+      prompt: userPrompt,
+    });
 
-    if (openAIApiKey) {
-      const openai = createOpenAI({
-        apiKey: openAIApiKey,
-        baseURL: process.env.AI_GATEWAY_URL,
-      });
+    console.info('[guest-insight] completed', { requestId });
 
-      const modelId = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-      const { text } = await generateText({
-        model: openai(modelId),
-        prompt: userPrompt,
-      });
-
-      return NextResponse.json({ completion: text, model: modelId, provider: 'openai' });
-    }
-
-    return NextResponse.json(
-      {
-        error: 'Unable to generate guest insight because no compatible provider is configured.',
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ completion: text, model: DEFAULT_MODEL, requestId });
   } catch (error) {
-    console.error('Guest insight generation failed.', error);
+    console.error('[guest-insight] failed', { requestId, error });
+
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
     return NextResponse.json(
       {
         error: 'Unable to generate guest insight at this time.',
+        requestId,
+        details: process.env.NODE_ENV === 'development' ? message : undefined,
       },
       { status: 500 },
     );

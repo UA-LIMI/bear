@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,9 @@ import { useRooms } from '@/features/room-control/hooks/useRooms';
 import { getGuestProfilesFixture } from '@/lib/fixtures';
 
 type AIBrief = {
-  summary: string;
-  actions: string[];
+  text: string;
+  model?: string;
+  requestId?: string;
 };
 
 type StaffCoverage = {
@@ -67,69 +68,58 @@ const minutesSince = (timestamp: string) => Math.round((Date.now() - new Date(ti
 
 const asTitle = (value: string) => value.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
-const useDashboardAIBrief = (payload: Record<string, unknown> | null) => {
+const DEFAULT_AI_PROMPT = 'Invent a new holiday and describe its traditions.';
+
+const useDashboardAIBrief = () => {
   const [brief, setBrief] = useState<AIBrief | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const payloadJson = useMemo(() => JSON.stringify(payload), [payload]);
+  const [lastPrompt, setLastPrompt] = useState(DEFAULT_AI_PROMPT);
 
-  useEffect(() => {
-    if (!payload) {
-      setBrief(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const run = async () => {
+  const run = useCallback(
+    async (prompt?: string) => {
+      const nextPrompt = prompt && prompt.trim().length > 0 ? prompt : DEFAULT_AI_PROMPT;
+      const controller = new AbortController();
       setLoading(true);
       setError(null);
+      setLastPrompt(nextPrompt);
+
       try {
         const response = await fetch('/api/ai/guest-insight', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt:
-              'You are a hotel general manager assistant. Provide a concise leadership briefing summarizing property performance and list three recommended actions prefixed with "-".',
-            guest: payload,
-          }),
+          body: JSON.stringify({ prompt: nextPrompt }),
           signal: controller.signal,
         });
 
         if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
+          const errorBody = await response.json().catch(() => ({}));
+          const errorMessage = typeof errorBody?.error === 'string' ? errorBody.error : 'AI request failed.';
+          const details = typeof errorBody?.details === 'string' ? ` Details: ${errorBody.details}` : '';
+          throw new Error(`${errorMessage} (status ${response.status}).${details}`);
         }
 
         const data = await response.json();
-        if (controller.signal.aborted) return;
-
-        const completion: string = data.completion ?? '';
-        const lines = completion.split('\n').map(line => line.trim()).filter(Boolean);
-        const actions = lines
-          .filter(line => line.startsWith('-') || line.startsWith('•'))
-          .map(line => line.replace(/^[-•]\s*/, ''))
-          .slice(0, 3);
-        const summary = lines.filter(line => !line.startsWith('-') && !line.startsWith('•')).join(' ');
-
-        setBrief({ summary: summary || completion, actions });
+        setBrief({
+          text: typeof data.completion === 'string' ? data.completion : '',
+          model: typeof data.model === 'string' ? data.model : undefined,
+          requestId: typeof data.requestId === 'string' ? data.requestId : undefined,
+        });
       } catch (err) {
-        if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err.message : 'Unable to load AI briefing.');
-        }
+        setBrief(null);
+        setError(err instanceof Error ? err.message : 'Unable to load AI briefing.');
       } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
-    };
+    },
+    [],
+  );
 
+  useEffect(() => {
     run();
-    return () => controller.abort();
-  }, [payloadJson, payload]);
+  }, [run]);
 
-  return { brief, loading, error };
+  return { brief, loading, error, run, lastPrompt };
 };
 
 const ExecutiveSnapshot = ({
@@ -159,16 +149,36 @@ const ExecutiveSnapshot = ({
   </div>
 );
 
-const AIBriefingPanel = ({ brief, loading, error }: { brief: AIBrief | null; loading: boolean; error: string | null }) => (
+const AIBriefingPanel = ({
+  brief,
+  loading,
+  error,
+  onRun,
+  prompt,
+}: {
+  brief: AIBrief | null;
+  loading: boolean;
+  error: string | null;
+  onRun: () => void;
+  prompt: string;
+}) => (
   <Card className="h-full">
     <CardHeader className="flex flex-row items-start justify-between gap-3">
-      <div>
-        <CardTitle>GM AI briefing</CardTitle>
-        <CardDescription>Summarized property performance and concierge recommendations.</CardDescription>
+      <div className="space-y-1">
+        <CardTitle>AI sample response</CardTitle>
+        <CardDescription>Runs the Vercel AI SDK example prompt to verify connectivity.</CardDescription>
       </div>
       <Badge variant="outline">AI</Badge>
     </CardHeader>
-    <CardContent className="space-y-3">
+    <CardContent className="space-y-4">
+      <div className="space-y-2 rounded-md border p-3 text-sm">
+        <p className="font-semibold text-foreground">Prompt</p>
+        <p className="text-muted-foreground">{prompt}</p>
+        <Button variant="secondary" size="sm" onClick={onRun} disabled={loading}>
+          {loading ? 'Running…' : 'Run prompt'}
+        </Button>
+      </div>
+
       {loading && (
         <div className="space-y-3">
           <Skeleton className="h-4 w-full" />
@@ -176,22 +186,24 @@ const AIBriefingPanel = ({ brief, loading, error }: { brief: AIBrief | null; loa
           <Skeleton className="h-4 w-2/3" />
         </div>
       )}
-      {error && !loading && <p className="text-sm text-destructive">{error}</p>}
+
+      {error && !loading && (
+        <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <p className="font-semibold">Request failed</p>
+          <p>{error}</p>
+        </div>
+      )}
+
       {!loading && !error && brief && (
         <div className="space-y-3">
-          <p className="text-sm text-foreground">{brief.summary}</p>
-          {brief.actions.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Suggested actions</p>
-              <div className="grid gap-2 md:grid-cols-2">
-                {brief.actions.map(action => (
-                  <Button key={action} variant="outline" className="h-full justify-start text-left text-sm">
-                    {action}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="space-y-2 rounded-md border bg-muted/40 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Model output</p>
+            <p className="whitespace-pre-wrap text-sm text-foreground">{brief.text || '—'}</p>
+          </div>
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {brief.model && <span>Model: {brief.model}</span>}
+            {brief.requestId && <span>Request ID: {brief.requestId}</span>}
+          </div>
         </div>
       )}
     </CardContent>
@@ -532,22 +544,8 @@ export default function DashboardPage() {
     [rooms],
   );
 
-  const aiPayload = useMemo(
-    () => ({
-      occupancyRate,
-      rooms: rooms.length,
-      pendingRequests: pendingRequests.length,
-      highPriorityRequests: highPriorityRequests.length,
-      averageRequestAgeMinutes: averageRequestAge,
-      arrivalsToday,
-      departuresToday,
-      estimatedRevenue,
-      vipGuests: guests.filter(guest => guest.vipStatus !== 'Standard').length,
-    }),
-    [occupancyRate, rooms.length, pendingRequests.length, highPriorityRequests.length, averageRequestAge, arrivalsToday, departuresToday, estimatedRevenue, guests],
-  );
-
-  const { brief: aiBrief, loading: aiLoading, error: aiError } = useDashboardAIBrief(aiPayload);
+  const { brief: aiBrief, loading: aiLoading, error: aiError, run: runAIBrief, lastPrompt: aiPrompt } =
+    useDashboardAIBrief();
 
   const metrics = [
     {
@@ -580,7 +578,13 @@ export default function DashboardPage() {
         <ExecutiveSnapshot metrics={metrics} isLoading={true} />
         <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
           <div className="space-y-6">
-            <AIBriefingPanel brief={null} loading={true} error={null} />
+            <AIBriefingPanel
+              brief={null}
+              loading={true}
+              error={null}
+              onRun={() => runAIBrief()}
+              prompt={aiPrompt}
+            />
             <RequestCommandCenter requests={pendingRequests} isLoading={true} showRelativeTimes={false} />
             <AutomationLogCard />
           </div>
@@ -620,7 +624,13 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
-          <AIBriefingPanel brief={aiBrief} loading={aiLoading} error={aiError} />
+          <AIBriefingPanel
+            brief={aiBrief}
+            loading={aiLoading}
+            error={aiError}
+            onRun={() => runAIBrief()}
+            prompt={aiPrompt}
+          />
           <RequestCommandCenter
             requests={pendingRequests}
             isLoading={isLoading}

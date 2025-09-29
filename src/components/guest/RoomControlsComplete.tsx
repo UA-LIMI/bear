@@ -3,16 +3,7 @@
 import { motion } from 'framer-motion';
 import { Lightbulb, Thermometer, Wind, Volume2, Bed, Shield } from 'lucide-react';
 
-interface GuestProfile {
-  id: string;
-  name: string;
-  status: 'inRoom' | 'bookedOffsite' | 'notLinked';
-  membershipTier: string;
-  profile: { occupation: string; aiPrompt: string; };
-  stayInfo?: { hotel: string; room?: string; location?: string; };
-  loyaltyPoints?: number;
-  guestType?: string;
-}
+import type { GuestProfile } from '@/types/guest';
 
 interface RoomControlsCompleteProps {
   selectedGuest: GuestProfile;

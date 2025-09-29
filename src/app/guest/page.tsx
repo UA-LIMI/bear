@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { 
@@ -18,27 +18,15 @@ import {
 import { WeatherModule } from '@/components/WeatherModule';
 import { AIModule } from '@/components/AIModule';
 import { RoomControlsComplete } from '@/components/guest/RoomControlsComplete';
-
-interface GuestProfile {
-  id: string;
-  name: string;
-  status: 'inRoom' | 'bookedOffsite' | 'notLinked';
-  membershipTier: string;
-  profile: { occupation: string; aiPrompt: string; };
-  stayInfo?: { hotel: string; room?: string; location?: string; };
-  loyaltyPoints?: number;
-  guestType?: string;
-}
-
-interface WeatherData {
-  temp: number;
-  condition: string;
-  humidity: number;
-  source?: string;
-  isLive?: boolean;
-  lastUpdated?: string;
-  error?: string;
-}
+import { SessionControlPanel } from '@/components/guest/SessionControlPanel';
+import { VoiceSessionConsole, type VoiceSessionConsoleHandle, type VoiceConnectionState } from '@/components/guest/VoiceSessionConsole';
+import { VoiceInterface } from '@/components/VoiceInterface';
+import { useGuestContext } from '@/hooks/useGuestContext';
+import { useVoiceTelemetry } from '@/hooks/useVoiceTelemetry';
+import type { GuestProfile } from '@/types/guest';
+import type { WeatherData } from '@/types/weather';
+import type { SessionSettings, VoiceContextSection } from '@/types/voice';
+import type { RealtimeSession } from '@openai/agents-realtime';
 
 interface HotelEvent {
   time: string;
@@ -73,6 +61,56 @@ export default function CompleteGuestInterface() {
     profiles: 'loading',
     ui: 'loading'
   });
+  const [sessionSettings, setSessionSettings] = useState<SessionSettings>({
+    qualityPreset: 'hd',
+    autoReconnect: true,
+    preferredLanguage: 'auto',
+    customLanguageCode: '',
+    telemetryIntervalMs: 3000,
+    enableTranscripts: false,
+    operatorNotes: '',
+  });
+  const voiceConsoleRef = useRef<VoiceSessionConsoleHandle | null>(null);
+  const [voiceConnectionState, setVoiceConnectionState] = useState<VoiceConnectionState>('idle');
+  const [voiceSession, setVoiceSession] = useState<RealtimeSession | null>(null);
+
+  const {
+    sections: contextSections,
+    selectedSections,
+    toggleSection,
+    setAllEnabled,
+  } = useGuestContext(selectedGuest, weather);
+
+  const telemetry = useVoiceTelemetry(voiceSession, {
+    intervalMs: sessionSettings.telemetryIntervalMs,
+  });
+
+  const handleVoiceConnect = useCallback(() => {
+    void voiceConsoleRef.current?.connect?.();
+  }, []);
+
+  const handleVoiceDisconnect = useCallback(() => {
+    void voiceConsoleRef.current?.disconnect?.();
+  }, []);
+
+  const isVoiceConnected = voiceConnectionState === 'connected';
+  const isVoiceProcessing = voiceConnectionState === 'connecting' || voiceConnectionState === 'disconnecting';
+
+  const handleSessionChange = useCallback((session: RealtimeSession | null) => {
+    setVoiceSession(session);
+  }, []);
+
+  const handleConnectionStateChange = useCallback((state: VoiceConnectionState) => {
+    setVoiceConnectionState(state);
+  }, []);
+
+  const handleSettingsChange = useCallback((nextSettings: SessionSettings) => {
+    setSessionSettings(nextSettings);
+  }, []);
+
+  const handleEnableAllSections = useCallback((enabled: boolean) => {
+    setAllEnabled(enabled);
+  }, [setAllEnabled]);
 
   // Initialize all modules
   useEffect(() => {
@@ -290,9 +328,9 @@ export default function CompleteGuestInterface() {
   };
 
   // Message handling for all modules
-  const handleAddMessage = (content: string, role: 'user' | 'ai') => {
+  const handleAddMessage = useCallback((content: string, role: 'user' | 'ai') => {
     console.log(`💬 ${role.toUpperCase()}: ${content}`);
-  };
+  }, []);
 
   // Get guest-specific theme and layout configuration
   const getGuestTheme = () => {
@@ -535,6 +573,57 @@ export default function CompleteGuestInterface() {
 
   const layout = getLayoutConfig();
 
+  const voiceControls = useMemo(() => {
+    if (!selectedGuest) return null;
+    return (
+      <div className="space-y-6">
+        <SessionControlPanel
+          guest={selectedGuest}
+          weather={weather}
+          settings={sessionSettings}
+          sections={contextSections}
+          selectedSections={selectedSections}
+          telemetry={telemetry}
+          isConnected={isVoiceConnected}
+          isProcessing={isVoiceProcessing}
+          onSettingsChange={handleSettingsChange}
+          onToggleSection={toggleSection}
+          onEnableAllSections={handleEnableAllSections}
+          onConnect={handleVoiceConnect}
+          onDisconnect={handleVoiceDisconnect}
+        />
+        <VoiceSessionConsole
+          ref={voiceConsoleRef}
+          guest={selectedGuest}
+          weather={weather}
+          settings={sessionSettings}
+          contexts={contextSections}
+          onAddMessage={handleAddMessage}
+          onSessionChange={handleSessionChange}
+          onConnectionStateChange={handleConnectionStateChange}
+        />
+      </div>
+    );
+  }, [
+    contextSections,
+    handleAddMessage,
+    handleConnectionStateChange,
+    handleEnableAllSections,
+    handleSessionChange,
+    handleSettingsChange,
+    handleVoiceConnect,
+    handleVoiceDisconnect,
+    isVoiceConnected,
+    isVoiceProcessing,
+    selectedGuest,
+    selectedSections,
+    sessionSettings,
+    telemetry,
+    toggleSection,
+    voiceConsoleRef,
+    weather,
+  ]);
+
   // Main guest interface - completely rebuilt with all working modules
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -640,6 +729,8 @@ export default function CompleteGuestInterface() {
               className={layout.rightSpan}
             >
               <div className="space-y-6">
+                {voiceControls}
+
                 {/* Complete Weather Module with map */}
                 <WeatherModule 
                   initialLocation="Hong Kong"

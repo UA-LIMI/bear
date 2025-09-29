@@ -211,7 +211,7 @@ export default function CompleteGuestInterface() {
       }
 
       const convertedProfiles: GuestProfile[] = result.guests.map((profile: Record<string, unknown>) => ({
-        id: profile.username as string,
+        id: profile.id as string,
         name: profile.display_name as string,
         status: 'inRoom' as const,
         membershipTier: profile.guest_type === 'suite' ? 'Platinum Elite' : 
@@ -281,26 +281,6 @@ export default function CompleteGuestInterface() {
       setModuleStatus(prev => ({ ...prev, ui: 'loading' }));
       console.log('🎨 UI module: Loading configuration...');
       
-      if (!guestId || !guestType) {
-        // Set comprehensive default configuration
-        setUiTextContent({
-          voice_connected: 'Professional Voice Connected',
-          voice_disconnected: 'Voice Disconnected', 
-          loading_guests: 'Loading Hong Kong guests...',
-          welcome_title: 'Welcome to LIMI AI x Hotels',
-          ai_assistant_name: 'LIMI AI Assistant',
-          room_controls_title: 'Smart Room Controls',
-          weather_title: 'Live Hong Kong Weather',
-          events_title: 'Today\'s Events',
-          processing_message: 'LIMI AI is thinking...',
-          guest_profile_title: 'Guest Profile',
-          location_title: 'Current Location',
-          services_title: 'Quick Services'
-        });
-        setModuleStatus(prev => ({ ...prev, ui: 'default' }));
-        return;
-      }
-
       const response = await fetch('/api/get-ui-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -573,8 +553,12 @@ export default function CompleteGuestInterface() {
 
   const layout = getLayoutConfig();
 
+  const isVoicePanelReady = Boolean(
+    selectedGuest && contextSections.length > 0 && !isVoiceProcessing && !loading
+  );
+
   const voiceControls = useMemo(() => {
-    if (!selectedGuest) return null;
+    if (!isVoicePanelReady || !selectedGuest) return null;
     return (
       <div className="space-y-6">
         <SessionControlPanel
@@ -615,6 +599,7 @@ export default function CompleteGuestInterface() {
     handleVoiceDisconnect,
     isVoiceConnected,
     isVoiceProcessing,
+    isVoicePanelReady,
     selectedGuest,
     selectedSections,
     sessionSettings,

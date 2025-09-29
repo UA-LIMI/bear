@@ -60,7 +60,7 @@ export function AIModule({ selectedGuest, weather, uiTextContent, onAddMessage }
 
   // Voice configuration
   const config = {
-    model: 'gpt-4o-realtime-preview-2024-10-01',
+    model: 'gpt-4o-realtime-preview',
     voice: selectedGuest.guestType === 'vip' ? 'alloy' : 'echo',
     instructions: `You are LIMI AI for The Peninsula Hong Kong, providing personalized assistance to hotel guests.
 

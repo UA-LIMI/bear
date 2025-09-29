@@ -270,7 +270,14 @@ Keep responses concise but comprehensive (under 100 words). Always greet guests 
   // Enhanced text chat using Vercel AI SDK
   const sendMessage = async (userMessage: string) => {
     if (!userMessage.trim()) return;
-    
+    const payloadMessages = [
+      ...messages.map(message => ({
+        role: message.role === 'ai' ? 'assistant' : message.role,
+        content: message.content
+      })),
+      { role: 'user', content: userMessage }
+    ];
+
     addMessage(userMessage, 'user');
     setInputText('');
     setIsProcessing(true);
@@ -280,16 +287,14 @@ Keep responses concise but comprehensive (under 100 words). Always greet guests 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [
-            { role: 'user', content: userMessage }
-          ],
+          messages: payloadMessages,
           guestContext: {
             guestName: selectedGuest.name,
             roomNumber: selectedGuest.stayInfo?.room,
             membershipTier: selectedGuest.membershipTier,
             occupation: selectedGuest.profile.occupation,
             location: selectedGuest.stayInfo?.location,
-            weather: weather,
+            weather,
             guestType: selectedGuest.guestType,
             loyaltyPoints: selectedGuest.loyaltyPoints,
             serviceLevel: selectedGuest.guestType
@@ -297,26 +302,13 @@ Keep responses concise but comprehensive (under 100 words). Always greet guests 
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Chat API request failed');
+        throw new Error(data?.message || 'Chat API request failed');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
-      let aiResponse = '';
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        aiResponse += chunk;
-      }
-
+      const aiResponse = typeof data?.completion === 'string' ? data.completion : '';
       addMessage(aiResponse.trim(), 'ai');
     } catch (error) {
       console.error('Chat error:', error);

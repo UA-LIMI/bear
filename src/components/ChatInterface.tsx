@@ -106,45 +106,38 @@ export function ChatInterface({ selectedGuest, weather, uiTextContent, onAddMess
     setIsLoading(true);
 
     try {
+      const payloadMessages = [
+        ...messages.map(m => ({ role: m.role === 'ai' ? 'assistant' : m.role, content: m.content })),
+        { role: 'user', content: userMessage }
+      ];
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [
-            ...messages.map(m => ({ role: m.role === 'ai' ? 'assistant' : m.role, content: m.content })),
-            { role: 'user', content: userMessage }
-          ],
+          messages: payloadMessages,
           guestContext: {
             guestName: selectedGuest.name,
             roomNumber: selectedGuest.stayInfo?.room,
             membershipTier: selectedGuest.membershipTier,
             occupation: selectedGuest.profile.occupation,
             location: selectedGuest.stayInfo?.location,
-            weather: weather
+            weather,
+            guestType: selectedGuest.guestType,
+            loyaltyPoints: selectedGuest.loyaltyPoints,
+            serviceLevel: selectedGuest.guestType
           }
         })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`Chat API error: ${response.status}`);
+        throw new Error(data?.message || `Chat API error: ${response.status}`);
       }
 
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
-
-      let aiResponse = '';
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        aiResponse += chunk;
-      }
-
-      addMessage(aiResponse, 'ai');
+      const aiResponse = typeof data?.completion === 'string' ? data.completion : '';
+      addMessage(aiResponse.trim(), 'ai');
     } catch (error) {
       console.error('Chat error:', error);
       addMessage(`Sorry ${selectedGuest.name}, I'm having trouble with my chat service. Please try voice chat or contact hotel staff.`, 'ai');

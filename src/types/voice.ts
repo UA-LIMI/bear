@@ -8,6 +8,18 @@ export interface SessionSettings {
   telemetryIntervalMs: number;
   enableTranscripts: boolean;
   operatorNotes: string;
+  mcpExposureMode: 'auto' | 'manual';
+  includedMcpTools: string[];
+}
+
+export interface McpToolDefinition {
+  serverLabel: string;
+  serverName: string;
+  tools: {
+    name: string;
+    title: string;
+    description: string;
+  }[];
 }
 
 export interface VoiceContextSection {

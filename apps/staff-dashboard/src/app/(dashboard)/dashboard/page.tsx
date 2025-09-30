@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useGuestRequests } from '@/features/requests/hooks/useGuestRequests';
+import { useServiceRequests } from '@/features/requests/hooks/useServiceRequests';
 import { useRooms } from '@/features/room-control/hooks/useRooms';
 import { getGuestProfilesFixture } from '@/lib/fixtures';
 
@@ -215,17 +215,18 @@ const RequestCommandCenter = ({
   isLoading,
   showRelativeTimes,
 }: {
-  requests: ReturnType<typeof useGuestRequests>['requests'];
+  requests: ReturnType<typeof useServiceRequests>['requests'];
   isLoading: boolean;
   showRelativeTimes: boolean;
 }) => {
   const grouped = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof useGuestRequests>['requests']>();
+    const map = new Map<string, ReturnType<typeof useServiceRequests>['requests']>();
     requests.forEach(request => {
-      if (!map.has(request.type)) {
-        map.set(request.type, []);
+      const key = request.requestType ?? 'general';
+      if (!map.has(key)) {
+        map.set(key, []);
       }
-      map.get(request.type)?.push(request);
+      map.get(key)?.push(request);
     });
     return Array.from(map.entries());
   }, [requests]);
@@ -249,24 +250,36 @@ const RequestCommandCenter = ({
                   <h3 className="text-sm font-semibold text-foreground">{asTitle(category)}</h3>
                   <p className="text-xs text-muted-foreground">{items.length} open</p>
                 </div>
-                <Badge variant="secondary">{items.filter(item => item.priority === 'high').length} high</Badge>
+                <Badge variant="secondary">
+                  {items.filter(item => item.priority === 'high' || item.priority === 'urgent').length} high
+                </Badge>
               </div>
               <div className="space-y-3">
                 {items.slice(0, 3).map(item => (
                   <div key={item.id} className="rounded-md border p-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-foreground">Room {item.roomNumber}</p>
-                      <Badge variant={item.priority === 'high' ? 'destructive' : 'outline'}>{item.priority}</Badge>
+                      <p className="text-sm font-semibold text-foreground">Room {item.roomNumber ?? '—'}</p>
+                      <Badge
+                        variant={item.priority === 'high' || item.priority === 'urgent' ? 'destructive' : 'outline'}
+                      >
+                        {item.priority}
+                      </Badge>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{item.guestName}</p>
-                    <p className="mt-2 text-sm text-foreground">{item.message}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.guestName ?? 'Guest'}</p>
+                    <p className="mt-2 text-sm text-foreground">{item.summary}</p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span>Assigned: {item.assignedStaff ?? 'Unassigned'}</span>
                       <span>
-                        Age: {showRelativeTimes ? `${minutesSince(item.timestamp)} min` : '—'}
+                        Age: {showRelativeTimes ? `${minutesSince(item.createdAt)} min` : '—'}
                       </span>
+                      {item.eta && <Badge variant="outline">ETA {new Date(item.eta).toLocaleTimeString()}</Badge>}
                       {item.scheduled && <Badge variant="outline">Scheduled</Badge>}
                     </div>
+                    {item.latestUpdate?.note && (
+                      <p className="mt-2 text-xs italic text-muted-foreground">
+                        Latest: {item.latestUpdate.note}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -492,7 +505,7 @@ const OccupancyHealthCard = ({
 };
 
 export default function DashboardPage() {
-  const { requests, isLoading: requestsLoading } = useGuestRequests();
+  const { requests, isLoading: requestsLoading } = useServiceRequests();
   const { rooms, isLoading: roomsLoading } = useRooms();
   const guests = useGuestProfiles();
   const [isHydrated, setIsHydrated] = useState(false);
@@ -504,18 +517,18 @@ export default function DashboardPage() {
   const isLoading = requestsLoading || roomsLoading;
 
   const pendingRequests = useMemo(
-    () => requests.filter(request => request.status !== 'completed'),
+    () => requests.filter(request => request.status !== 'completed' && request.status !== 'cancelled'),
     [requests],
   );
 
   const highPriorityRequests = useMemo(
-    () => pendingRequests.filter(request => request.priority === 'high'),
+    () => pendingRequests.filter(request => request.priority === 'high' || request.priority === 'urgent'),
     [pendingRequests],
   );
 
   const averageRequestAge = useMemo(() => {
     if (!isHydrated || requests.length === 0) return null;
-    const totalMinutes = requests.reduce((total, request) => total + minutesSince(request.timestamp), 0);
+    const totalMinutes = requests.reduce((total, request) => total + minutesSince(request.createdAt), 0);
     return Math.max(1, Math.round(totalMinutes / requests.length));
   }, [isHydrated, requests]);
 

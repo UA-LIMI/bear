@@ -1,5 +1,5 @@
 export const queryKeys = {
-  guestRequests: ['guestRequests'] as const,
+  serviceRequests: ['serviceRequests'] as const,
   rooms: ['rooms'] as const,
   notifications: ['notifications'] as const,
   guestProfiles: ['guestProfiles'] as const,

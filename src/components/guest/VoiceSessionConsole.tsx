@@ -57,10 +57,15 @@ const buildInstructions = (
   contexts: VoiceContextSection[],
   settings: SessionSettings
 ) => {
-  const contextBlocks = contexts
-    .filter((section) => section.enabled)
-    .map((section) => `### ${section.title}\n${section.description}\n${JSON.stringify(section.payload, null, 2)}`)
-    .join('\n\n');
+  const enabledContexts = contexts.filter((section) => section.enabled);
+  const contextSection = enabledContexts.length
+    ? enabledContexts
+        .map(
+          (section) =>
+            `- ${section.title}: ${section.description}. Data: ${JSON.stringify(section.payload ?? {}, null, 2)}`
+        )
+        .join('\n')
+    : '- None provided.';
 
   const languageDirective =
     settings.preferredLanguage === 'auto'
@@ -73,17 +78,42 @@ const buildInstructions = (
     ? `Current weather: ${weather.temp}°C, ${weather.condition}, humidity ${weather.humidity}%. Source: ${weather.source ?? 'unspecified'}.`
     : 'Weather data is unavailable; do not reference weather conditions.';
 
-  return `You are LIMI AI Concierge for The Peninsula Hong Kong.
-Guest: ${guest.name} (${guest.profile?.occupation ?? 'Guest'}) in room ${guest.stayInfo?.room ?? 'N/A'}.
-Membership tier: ${guest.membershipTier} with ${guest.loyaltyPoints ?? 0} loyalty points.
-${weatherLine}
-${languageDirective}
-Operator notes: ${settings.operatorNotes || 'none provided'}.
+  return `# Role
+You are LIMI AI Concierge for The Peninsula Hong Kong. Deliver polished, proactive service that reflects a luxury hospitality experience.
 
-Provide concise, courteous responses that reflect a luxury hospitality tone.
+# Guest Snapshot
+- Name: ${guest.name}
+- Occupation: ${guest.profile?.occupation ?? 'Guest'}
+- Room: ${guest.stayInfo?.room ?? 'Unavailable'}
+- Membership tier: ${guest.membershipTier}
+- Loyalty points: ${guest.loyaltyPoints ?? 0}
+- Operator notes: ${settings.operatorNotes || 'None'}
 
-CONTEXT BLOCKS:
-${contextBlocks || '(no optional context enabled)'}`;
+# Context
+${contextSection}
+
+# Environment
+- ${weatherLine}
+- ${languageDirective}
+
+# Tools
+- Use \`create_service_request\` to file a new guest request. Confirm details (guest name, room, priority) and produce a staff-ready summary of at least 12 characters.
+- Use \`get_service_requests\` to retrieve current or historic requests when the guest asks for updates or status checks.
+- Never invent data. Ask clarifying questions if required details (e.g., room, timeframe, contact info) are missing.
+
+# Safety & Privacy
+- Do not disclose internal notes or other guests’ information.
+- Avoid promising unavailable services; instead, offer to escalate to human staff when unsure.
+- Confirm sensitive actions (payments, security, emergencies) before proceeding.
+
+# Escalation
+- Escalate any emergency, medical concern, or request outside concierge authority to a human staff member immediately.
+- If the guest expresses dissatisfaction or the task requires manual approval, notify staff and summarize the situation.
+
+# Response Style
+- Keep replies concise, warm, and professional.
+- Summarize actions taken and next steps.
+- Offer proactive assistance related to the guest’s profile when appropriate.`;
 };
 
 export const VoiceSessionConsole = forwardRef<VoiceSessionConsoleHandle, VoiceSessionConsoleProps>(
@@ -213,7 +243,22 @@ export const VoiceSessionConsole = forwardRef<VoiceSessionConsoleHandle, VoiceSe
           throw new Error(payload.message || 'Failed to obtain realtime session key');
         }
 
-        const { ephemeralKey } = await response.json();
+        const { ephemeralKey, mcpServers = [] } = await response.json();
+
+        const hostedMcpServersMeta = Array.isArray(mcpServers)
+          ? mcpServers
+              .filter((server: { url?: string }) => typeof server?.url === 'string')
+              .map((server: { name?: string; label?: string; url: string; authorization?: string }) => {
+                const baseName = server.label ?? server.name ?? 'service-request-mcp';
+                const normalizedLabel = baseName.replace(/\s+/g, '_');
+                return {
+                  serverLabel: normalizedLabel,
+                  originalLabel: normalizedLabel,
+                  serverUrl: server.url,
+                  authorization: server.authorization,
+                };
+              })
+          : [];
 
         const agent = new RealtimeAgent({
           name: 'LIMI AI Concierge',
@@ -234,6 +279,47 @@ export const VoiceSessionConsole = forwardRef<VoiceSessionConsoleHandle, VoiceSe
         setIsMuted(false);
 
         await realtimeSession.connect({ apiKey: ephemeralKey });
+
+        if (hostedMcpServersMeta.length > 0) {
+          const manualToolMap = new Map<string, string[]>();
+          if (settings.mcpExposureMode === 'manual') {
+            for (const entry of settings.includedMcpTools) {
+              const [label, toolName] = entry.split(':');
+              if (!label || !toolName) continue;
+              const normalizedLabel = label.replace(/\s+/g, '_');
+              const bucket = manualToolMap.get(normalizedLabel) ?? [];
+              bucket.push(toolName);
+              manualToolMap.set(normalizedLabel, bucket);
+            }
+          }
+
+          const configuredServers = hostedMcpServersMeta.map(({ serverLabel, serverUrl, authorization }) => {
+            const serverConfig: Record<string, unknown> = {
+              server_label: serverLabel,
+              server_url: serverUrl,
+            };
+
+            if (authorization) {
+              serverConfig.authorization = authorization;
+            }
+
+            if (settings.mcpExposureMode === 'manual') {
+              const allowedTools = manualToolMap.get(serverLabel) ?? [];
+              serverConfig.allowed_tools = allowedTools;
+            }
+
+            return serverConfig;
+          });
+
+          realtimeSession.transport.sendEvent({
+            type: 'session.update',
+            session: {
+              // The Realtime API accepts mcp_servers even though the SDK typings do not yet expose it
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              mcp_servers: configuredServers as any,
+            } as unknown as Partial<Record<string, unknown>>,
+          });
+        }
 
         sessionRef.current = realtimeSession;
         setSession(realtimeSession);

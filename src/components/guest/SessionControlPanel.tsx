@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { GuestProfile } from '@/types/guest';
 import type { WeatherData } from '@/types/weather';
-import type { SessionSettings, VoiceContextSection, VoiceQualityPreset } from '@/types/voice';
+import type { McpToolDefinition, SessionSettings, VoiceContextSection, VoiceQualityPreset } from '@/types/voice';
 import type { VoiceTelemetry, VoiceTelemetryStatus } from '@/hooks/useVoiceTelemetry';
 
 interface SessionControlPanelProps {
@@ -35,6 +35,9 @@ interface SessionControlPanelProps {
   onEnableAllSections: (enabled: boolean) => void;
   onConnect: () => void;
   onDisconnect: () => void;
+  mcpCatalog: McpToolDefinition[];
+  mcpCatalogStatus: 'idle' | 'loading' | 'success' | 'error';
+  mcpCatalogError: string | null;
 }
 
 const QUALITY_OPTIONS: { value: VoiceQualityPreset; label: string }[] = [
@@ -131,6 +134,9 @@ export function SessionControlPanel({
   onEnableAllSections,
   onConnect,
   onDisconnect,
+  mcpCatalog,
+  mcpCatalogStatus,
+  mcpCatalogError,
 }: SessionControlPanelProps) {
   const [localSettings, setLocalSettings] = useState<SessionSettings>(settings);
 
@@ -146,10 +152,51 @@ export function SessionControlPanel({
     });
   };
 
+  const allMcpTools = useMemo(
+    () =>
+      mcpCatalog.flatMap((server) =>
+        server.tools.map((tool) => ({
+          key: `${server.serverLabel}:${tool.name}`,
+          name: tool.title ?? tool.name,
+          description: tool.description,
+          serverLabel: server.serverLabel,
+          serverName: server.serverName,
+        }))
+      ),
+    [mcpCatalog]
+  );
+
+  const allToolKeys = useMemo(() => allMcpTools.map((tool) => tool.key), [allMcpTools]);
+
+  const handleMcpModeChange = (mode: SessionSettings['mcpExposureMode']) => {
+    if (mode === localSettings.mcpExposureMode) return;
+
+    if (mode === 'auto') {
+      handleSettingUpdate({ mcpExposureMode: 'auto', includedMcpTools: allToolKeys });
+    } else {
+      const seed = localSettings.includedMcpTools.length > 0 ? localSettings.includedMcpTools : allToolKeys;
+      handleSettingUpdate({ mcpExposureMode: 'manual', includedMcpTools: seed });
+    }
+  };
+
+  const handleToolToggle = (toolKey: string) => {
+    if (localSettings.mcpExposureMode !== 'manual') return;
+
+    const exists = localSettings.includedMcpTools.includes(toolKey);
+    const nextTools = exists
+      ? localSettings.includedMcpTools.filter((key) => key !== toolKey)
+      : [...localSettings.includedMcpTools, toolKey];
+    handleSettingUpdate({ includedMcpTools: nextTools });
+  };
+
+  const handleSelectAllTools = () => handleSettingUpdate({ includedMcpTools: allToolKeys });
+  const handleClearTools = () => handleSettingUpdate({ includedMcpTools: [] });
+
   const statusStyles = statusConfig[telemetry.status];
   const latestHistory = useMemo(() => telemetry.history.slice(-6).reverse(), [telemetry.history]);
   const enabledSectionsCount = selectedSections.length;
   const totalSectionsCount = sections.length;
+  const selectedToolCount = localSettings.includedMcpTools.length;
 
   return (
     <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl backdrop-blur">
@@ -262,6 +309,100 @@ export function SessionControlPanel({
         />
       </div>
 
+      <div className="mt-4 space-y-3">
+        <div className="flex flex-col gap-1">
+          <Label className="text-white/80">AI Tool Exposure</Label>
+          <p className="text-xs text-white/60">
+            Decide which MCP tools the concierge may call during this guest session.
+          </p>
+        </div>
+        <Select
+          value={localSettings.mcpExposureMode}
+          onValueChange={(value) => handleMcpModeChange(value as SessionSettings['mcpExposureMode'])}
+          disabled={mcpCatalogStatus === 'loading'}
+        >
+          <SelectTrigger className="min-w-[220px]">
+            <SelectValue placeholder="Select exposure mode" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Exposure Mode</SelectLabel>
+              <SelectItem value="auto">Automatic (all available tools)</SelectItem>
+              <SelectItem value="manual" disabled={mcpCatalogStatus !== 'success'}>
+                Manual selection
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        {localSettings.mcpExposureMode === 'manual' && (
+          <div className="space-y-3 rounded-xl border border-white/10 bg-black/40 p-4">
+            {mcpCatalogStatus === 'loading' && (
+              <p className="text-xs text-white/60">Loading MCP tools…</p>
+            )}
+            {mcpCatalogStatus === 'error' && (
+              <p className="text-xs text-red-300">
+                Failed to load tools: {mcpCatalogError ?? 'Unknown error'}. Please retry later.
+              </p>
+            )}
+            {mcpCatalogStatus === 'success' && allMcpTools.length === 0 && (
+              <p className="text-xs text-white/60">No MCP tools available to configure.</p>
+            )}
+            {mcpCatalogStatus === 'success' && allMcpTools.length > 0 && (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/60">
+                  <span>
+                    {selectedToolCount} of {allMcpTools.length} tools enabled
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-white/70 hover:bg-white/10"
+                      onClick={handleSelectAllTools}
+                    >
+                      Enable All
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-white/60 hover:bg-white/10"
+                      onClick={handleClearTools}
+                    >
+                      Disable All
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {allMcpTools.map((tool) => (
+                    <label
+                      key={tool.key}
+                      className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={localSettings.includedMcpTools.includes(tool.key)}
+                        onChange={() => handleToolToggle(tool.key)}
+                        className="mt-1 h-4 w-4 rounded border-white/40 bg-black/60 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      />
+                      <span className="space-y-1 text-sm text-white/80">
+                        <span className="block text-sm font-semibold text-white">{tool.name}</span>
+                        {tool.description && (
+                          <span className="block text-xs text-white/60">{tool.description}</span>
+                        )}
+                        <span className="block text-[10px] uppercase tracking-wide text-white/40">
+                          Server: {tool.serverName}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Button
           onClick={isConnected ? onDisconnect : onConnect}
@@ -291,6 +432,8 @@ export function SessionControlPanel({
               telemetryIntervalMs: 3000,
               enableTranscripts: false,
               operatorNotes: '',
+              mcpExposureMode: 'auto',
+              includedMcpTools: allToolKeys,
             });
             onEnableAllSections(true);
           }}

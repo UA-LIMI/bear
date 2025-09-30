@@ -20,12 +20,14 @@ import { AIModule } from '@/components/AIModule';
 import { RoomControlsComplete } from '@/components/guest/RoomControlsComplete';
 import { SessionControlPanel } from '@/components/guest/SessionControlPanel';
 import { VoiceSessionConsole, type VoiceSessionConsoleHandle, type VoiceConnectionState } from '@/components/guest/VoiceSessionConsole';
+import { GuestServiceRequestPanel } from '@/components/guest/GuestServiceRequestPanel';
+import type { ServiceRequest } from '@/types/service-request';
 import { VoiceInterface } from '@/components/VoiceInterface';
 import { useGuestContext } from '@/hooks/useGuestContext';
 import { useVoiceTelemetry } from '@/hooks/useVoiceTelemetry';
 import type { GuestProfile } from '@/types/guest';
 import type { WeatherData } from '@/types/weather';
-import type { SessionSettings, VoiceContextSection } from '@/types/voice';
+import type { McpToolDefinition, SessionSettings, VoiceContextSection } from '@/types/voice';
 import type { RealtimeSession } from '@openai/agents-realtime';
 
 interface HotelEvent {
@@ -80,10 +82,18 @@ export default function CompleteGuestInterface() {
     telemetryIntervalMs: 3000,
     enableTranscripts: false,
     operatorNotes: '',
+    mcpExposureMode: 'auto',
+    includedMcpTools: [],
   });
   const voiceConsoleRef = useRef<VoiceSessionConsoleHandle | null>(null);
   const [voiceConnectionState, setVoiceConnectionState] = useState<VoiceConnectionState>('idle');
   const [voiceSession, setVoiceSession] = useState<RealtimeSession | null>(null);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
+  const [mcpCatalog, setMcpCatalog] = useState<McpToolDefinition[]>([]);
+  const [mcpCatalogStatus, setMcpCatalogStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [mcpCatalogError, setMcpCatalogError] = useState<string | null>(null);
 
   const {
     sections: contextSections,
@@ -123,6 +133,41 @@ export default function CompleteGuestInterface() {
     setAllEnabled(enabled);
   }, [setAllEnabled]);
 
+  const refreshServiceRequests = useCallback(async () => {
+    if (!selectedGuest) {
+      setServiceRequests([]);
+      setRequestsError(null);
+      return;
+    }
+
+    try {
+      setIsLoadingRequests(true);
+      setRequestsError(null);
+      const response = await fetch(`/api/service-requests?guestId=${selectedGuest.id}&includeHistory=true&limit=20`, {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Request failed with status ${response.status}`);
+      }
+
+      const payload = await response.json();
+      if (!payload?.success) {
+        throw new Error(payload?.error || 'Failed to load service requests');
+      }
+
+      setServiceRequests(payload.requests ?? []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error fetching service requests';
+      console.error('❌ Service request load failed:', message);
+      setRequestsError(message);
+      setServiceRequests([]);
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  }, [selectedGuest]);
+
   // Initialize all modules
   useEffect(() => {
     initializeAllModules();
@@ -134,14 +179,15 @@ export default function CompleteGuestInterface() {
     const modulePromises = [
       loadGuestProfiles(),
       loadWeather(),
-      loadEvents()
+      loadEvents(),
+      loadMcpCatalog(),
     ];
 
     const results = await Promise.allSettled(modulePromises);
 
     // Log module loading results
     results.forEach((result, index) => {
-      const modules = ['profiles', 'weather', 'events'];
+      const modules = ['profiles', 'weather', 'events', 'mcp'];
       if (result.status === 'fulfilled') {
         console.log(`✅ Module ${modules[index]} loaded successfully`);
       } else {
@@ -151,7 +197,40 @@ export default function CompleteGuestInterface() {
 
     setLoading(false);
     if (selectedGuest) {
-      await loadUIConfiguration(selectedGuest.id, selectedGuest.guestType);
+      await Promise.allSettled([
+        loadUIConfiguration(selectedGuest.id, selectedGuest.guestType),
+        refreshServiceRequests(),
+      ]);
+    }
+  };
+
+  const loadMcpCatalog = async () => {
+    try {
+      setMcpCatalogStatus('loading');
+      setMcpCatalogError(null);
+
+      const response = await fetch('/api/mcp-tool-catalog', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`MCP catalog request failed (${response.status})`);
+      }
+
+      const data = (await response.json()) as { servers?: McpToolDefinition[] };
+      const servers = data.servers ?? [];
+      setMcpCatalog(servers);
+      setMcpCatalogStatus('success');
+
+      const allToolNames = servers.flatMap((server) => server.tools.map((tool) => `${server.serverLabel}:${tool.name}`));
+      if (allToolNames.length > 0) {
+        setSessionSettings((prev) => ({
+          ...prev,
+          includedMcpTools: prev.includedMcpTools.length > 0 ? prev.includedMcpTools : allToolNames,
+        }));
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ MCP catalog: Failed -', message);
+      setMcpCatalogStatus('error');
+      setMcpCatalogError(message);
     }
   };
 
@@ -340,12 +419,15 @@ export default function CompleteGuestInterface() {
     if (!selectedGuest) {
       setUiComponents([]);
       setUiTextContent({});
-      setModuleStatus(prev => ({ ...prev, ui: 'idle' }));
+      setModuleStatus((prev) => ({ ...prev, ui: 'idle' }));
+      setServiceRequests([]);
+      setRequestsError(null);
       return;
     }
 
     void loadUIConfiguration(selectedGuest.id, selectedGuest.guestType);
-  }, [loadUIConfiguration, selectedGuest]);
+    void refreshServiceRequests();
+  }, [loadUIConfiguration, selectedGuest, refreshServiceRequests]);
 
   // Message handling for all modules
   const handleAddMessage = useCallback((content: string, role: 'user' | 'ai') => {
@@ -469,8 +551,18 @@ export default function CompleteGuestInterface() {
             onEnableAllSections={handleEnableAllSections}
             onConnect={handleVoiceConnect}
             onDisconnect={handleVoiceDisconnect}
+            mcpCatalog={mcpCatalog}
+            mcpCatalogStatus={mcpCatalogStatus}
+            mcpCatalogError={mcpCatalogError}
           />
         )}
+        <GuestServiceRequestPanel
+          guest={selectedGuest}
+          requests={serviceRequests}
+          isLoading={isLoadingRequests}
+          error={requestsError}
+          onRefresh={refreshServiceRequests}
+        />
         {sessionConsole && (
           <VoiceSessionConsole
             ref={voiceConsoleRef}

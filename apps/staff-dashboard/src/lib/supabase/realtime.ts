@@ -23,6 +23,40 @@ export const subscribeToGuestRequests = (
   return () => channel.unsubscribe();
 };
 
+export const subscribeToServiceRequests = (
+  client: TypedSupabaseClient,
+  handler: (payload: Record<string, unknown>) => void
+): SubscriptionCleanup => {
+  const channel = client
+    .channel(channelKey('service_requests'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
+      if (record) {
+        handler(record);
+      }
+    })
+    .subscribe();
+
+  return () => channel.unsubscribe();
+};
+
+export const subscribeToServiceRequestUpdates = (
+  client: TypedSupabaseClient,
+  handler: (payload: Record<string, unknown>) => void
+): SubscriptionCleanup => {
+  const channel = client
+    .channel(channelKey('service_request_updates'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'service_request_updates' }, payload => {
+      const record = payload.new as Record<string, unknown> | null;
+      if (record) {
+        handler(record);
+      }
+    })
+    .subscribe();
+
+  return () => channel.unsubscribe();
+};
+
 export const subscribeToRoomUpdates = (
   client: TypedSupabaseClient,
   handler: (payload: Record<string, unknown>) => void

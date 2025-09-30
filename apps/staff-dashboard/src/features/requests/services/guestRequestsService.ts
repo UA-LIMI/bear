@@ -1,102 +1,99 @@
-import type { Database, GuestRequest, GuestRequestMessage } from '@/lib/types/supabase';
+import type { ServiceRequest, ServiceRequestRow, ServiceRequestUpdateRow } from '@/lib/types/serviceRequests';
 import {
   getSupabaseClient,
   isSupabaseConfigured,
-  subscribeToGuestRequests,
+  subscribeToServiceRequests,
+  subscribeToServiceRequestUpdates,
   type SubscriptionCleanup,
 } from '@/lib/supabase';
-import { getGuestRequestsFixture } from '@/lib/fixtures';
 
-type GuestRequestRow = Database['public']['Tables']['guest_requests']['Row'];
-
-const parseConversation = (conversation: GuestRequestRow['conversation']): GuestRequestMessage[] => {
-  if (!Array.isArray(conversation)) {
-    return [];
-  }
-
-  return conversation
-    .map(item => {
-      if (!item || typeof item !== 'object') {
-        return null;
-      }
-
-      const record = item as Record<string, unknown>;
-      const sender = record.sender;
-      const message = record.message;
-      const timestamp = record.timestamp;
-
-      if (
-        (sender === 'guest' || sender === 'staff') &&
-        typeof message === 'string' &&
-        typeof timestamp === 'string'
-      ) {
-        return {
-          sender,
-          message,
-          timestamp,
-        } satisfies GuestRequestMessage;
-      }
-
-      return null;
-    })
-    .filter((item): item is GuestRequestMessage => item !== null);
-};
-
-const mapGuestRequest = (row: GuestRequestRow): GuestRequest => ({
-  id: row.id,
-  roomNumber: row.room_number ?? '—',
-  guestName: row.guest_name ?? 'Guest',
-  guestId: row.guest_id,
-  type: row.request_type ?? 'general',
-  status: (row.status as GuestRequest['status']) ?? 'pending',
-  priority: (row.priority as GuestRequest['priority']) ?? 'normal',
-  timestamp: row.timestamp ?? row.created_at ?? new Date().toISOString(),
-  message: row.message ?? '',
-  scheduled: row.scheduled ?? false,
-  scheduledFor: row.scheduled_for ?? null,
-  assignedStaff: row.assigned_staff ?? null,
-  aiSuggestion: row.ai_suggestion ?? null,
-  conversation: parseConversation(row.conversation),
-  created_at: row.created_at ?? null,
-  updated_at: row.updated_at ?? null,
+const mapUpdate = (row: ServiceRequestUpdateRow) => ({
+  ...row,
+  metadata: row.metadata ?? {},
 });
 
-const isGuestRequestRow = (payload: unknown): payload is GuestRequestRow => {
-  if (!payload || typeof payload !== 'object') {
-    return false;
-  }
+const mapRequest = (row: ServiceRequestRow): ServiceRequest => {
+  const updates = (row.service_request_updates ?? []).map(mapUpdate).sort(
+    (a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime(),
+  );
 
-  const record = payload as Partial<GuestRequestRow>;
-  return typeof record.id === 'string';
+  return {
+    id: row.id,
+    guestId: row.guest_id,
+    guestName: row.profiles?.display_name ?? row.profiles?.username ?? null,
+    roomNumber: row.room_number,
+    requestType: row.request_type,
+    summary: row.summary,
+    status: row.status,
+    priority: row.priority,
+    eta: row.eta,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    metadata: row.metadata ?? {},
+    updates,
+    latestUpdate: updates[0] ?? null,
+    assignedStaff: row.assigned_staff ?? null,
+    aiSummary: row.ai_summary ?? null,
+    source: row.source ?? null,
+    resolvedAt: row.resolved_at ?? null,
+    followUp: row.follow_up ?? {},
+    scheduled: row.scheduled ?? false,
+    scheduledFor: row.scheduled_for ?? null,
+    lastReviewerId: row.last_reviewer_id ?? null,
+  };
 };
 
-export const fetchGuestRequests = async (): Promise<GuestRequest[]> => {
+const fetchRequestById = async (id: string): Promise<ServiceRequest | null> => {
+  const client = getSupabaseClient();
+  if (!client) {
+    return null;
+  }
+
+  const { data, error } = await client
+    .from('service_requests')
+    .select('*, profiles(display_name, username), service_request_updates(*)')
+    .eq('id', id)
+    .limit(1)
+    .single();
+
+  if (error) {
+    console.error('fetchRequestById error', error);
+    return null;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapRequest(data as ServiceRequestRow);
+};
+
+export const fetchServiceRequests = async (): Promise<ServiceRequest[]> => {
   if (!isSupabaseConfigured()) {
-    return getGuestRequestsFixture();
+    return [];
   }
 
   const client = getSupabaseClient();
   if (!client) {
-    return getGuestRequestsFixture();
+    return [];
   }
 
   const { data, error } = await client
-    .from('guest_requests')
-    .select(
-      'id, guest_id, room_number, guest_name, request_type, status, priority, message, conversation, scheduled, scheduled_for, assigned_staff, ai_suggestion, created_at, updated_at, timestamp'
-    )
-    .order('timestamp', { ascending: false })
-    .order('created_at', { ascending: false });
+    .from('service_requests')
+    .select('*, profiles(display_name, username), service_request_updates(*)')
+    .order('created_at', { ascending: false })
+    .limit(100);
 
   if (error) {
     throw error;
   }
 
-  return (data ?? []).map(mapGuestRequest);
+  return (data ?? []).map(row => mapRequest(row as ServiceRequestRow));
 };
 
-export const registerGuestRequestSubscription = (
-  onRequest: (request: GuestRequest) => void,
+export const registerServiceRequestSubscription = (
+  onRequest: (request: ServiceRequest) => void,
 ): SubscriptionCleanup | null => {
   if (!isSupabaseConfigured()) {
     return null;
@@ -107,11 +104,36 @@ export const registerGuestRequestSubscription = (
     return null;
   }
 
-  return subscribeToGuestRequests(client, payload => {
-    if (!isGuestRequestRow(payload)) {
+  const handleChange = async (record: Record<string, unknown>) => {
+    const id = typeof record.id === 'string' ? record.id : null;
+    if (!id) {
       return;
     }
 
-    onRequest(mapGuestRequest(payload));
+    const latest = await fetchRequestById(id);
+    if (latest) {
+      onRequest(latest);
+    }
+  };
+
+  const requestCleanup = subscribeToServiceRequests(client, async payload => {
+    await handleChange(payload);
   });
+
+  const updatesCleanup = subscribeToServiceRequestUpdates(client, async payload => {
+    const requestId = typeof payload.request_id === 'string' ? payload.request_id : null;
+    if (!requestId) {
+      return;
+    }
+
+    const latest = await fetchRequestById(requestId);
+    if (latest) {
+      onRequest(latest);
+    }
+  });
+
+  return () =>
+    Promise.all([requestCleanup?.(), updatesCleanup?.()])
+      .then(() => 'ok' as const)
+      .catch(() => 'error' as const);
 };

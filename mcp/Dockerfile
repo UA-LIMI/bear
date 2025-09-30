@@ -1,15 +1,17 @@
-# Use a lightweight base image
-FROM node:20-slim
+# syntax=docker/dockerfile:1
+FROM node:20-slim AS base
 
-# Set working directory
 WORKDIR /usr/src/app
 
-# Install the Redis MCP Server package from Docker's MCP Catalog
-# This assumes the package is published and available.
-RUN npm install -g @mcp/redis-server
+# Install only production dependencies
+COPY package.json ./
+RUN npm install --production
 
-# Expose the default MCP server port
+# Copy the server code
+COPY server.js ./
+
+ENV NODE_ENV=production
+
 EXPOSE 8080
 
-# Start the server
-CMD ["mcp-redis-server"]
+CMD ["node", "server.js"]

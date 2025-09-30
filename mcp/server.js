@@ -34,10 +34,11 @@ app.get('/health', (_req, res) => {
 app.get('/tools', requireAuth, (_req, res) => {
   res.json([
     {
+      type: 'function',
       name: 'create_service_request',
       description:
         'Create a new guest service request in the database. Use when guest requests: food/dining (room service, restaurant reservations), transportation (taxis, car service, airport transfers), housekeeping (cleaning, towels, amenities), concierge services (tickets, tours, information), or maintenance (AC, repairs). Returns confirmation with request ID.',
-      input_schema: {
+      parameters: {
         type: 'object',
         properties: {
           guestId: { type: ['string', 'null'], description: 'Supabase profile UUID for the guest, if available.' },
@@ -59,10 +60,11 @@ app.get('/tools', requireAuth, (_req, res) => {
       },
     },
     {
+      type: 'function',
       name: 'get_service_requests',
       description:
         'Retrieve service requests for a guest or room. Use when guest asks: "Where is my food?", "What about my taxi?", "Did you get my request?", or any status inquiry. Returns list with status (pending/in_progress/completed), priority, timestamps, and any updates from staff.',
-      input_schema: {
+      parameters: {
         type: 'object',
         properties: {
           guestId: { type: ['string', 'null'], description: 'Supabase profile UUID for the guest.' },
@@ -87,10 +89,11 @@ app.get('/tools', requireAuth, (_req, res) => {
       },
     },
     {
+      type: 'function',
       name: 'update_service_request_priority',
       description:
         'Update the priority of an existing service request. Use when: guest asks "Where is my order?" or "What\'s taking so long?" for a request that\'s still pending - escalate to urgent to alert staff that guest is waiting and asking for updates.',
-      input_schema: {
+      parameters: {
         type: 'object',
         properties: {
           requestId: { type: 'string', description: 'The UUID of the service request to update (from get_service_requests).' },

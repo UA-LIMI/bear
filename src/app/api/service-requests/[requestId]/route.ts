@@ -13,6 +13,14 @@ const getSupabaseAdmin = async () => {
   return createClient(url, serviceKey);
 };
 
+const normalizePriority = (value: unknown): 'low' | 'normal' | 'high' | 'urgent' | null => {
+  const allowed = new Set(['low', 'normal', 'high', 'urgent']);
+  if (typeof value === 'string' && allowed.has(value)) {
+    return value as 'low' | 'normal' | 'high' | 'urgent';
+  }
+  return null;
+};
+
 const normalizeStatus = (value: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' | null => {
   const allowed = new Set(['pending', 'in_progress', 'completed', 'cancelled']);
   if (typeof value === 'string' && allowed.has(value)) {
@@ -50,6 +58,11 @@ export async function PATCH(request: NextRequest, context: unknown) {
     const status = normalizeStatus(payload.status);
     if (status) {
       updates.status = status;
+    }
+
+    const priority = normalizePriority(payload.priority);
+    if (priority) {
+      updates.priority = priority;
     }
 
     if (typeof payload.eta === 'string' || payload.eta === null) {

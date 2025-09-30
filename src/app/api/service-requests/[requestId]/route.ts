@@ -27,7 +27,7 @@ const ParamsSchema = z.object({ requestId: z.string().min(1) });
 // internal typegen helpers, we accept an arbitrary context and validate with Zod.
 export async function PATCH(request: NextRequest, context: unknown) {
   try {
-    const params = (context as { params?: unknown })?.params;
+    const params = await (context as { params?: Promise<unknown> })?.params;
     const parseResult = ParamsSchema.safeParse(params);
     if (!parseResult.success) {
       return Response.json({ success: false, error: 'Invalid route parameters' }, { status: 400 });

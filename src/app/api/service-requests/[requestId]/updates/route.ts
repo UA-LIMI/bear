@@ -25,7 +25,8 @@ const ParamsSchema = z.object({ requestId: z.string().min(1) });
 
 export async function POST(request: NextRequest, context: any) {
   try {
-    const parseResult = ParamsSchema.safeParse(context.params);
+    const params = await context.params;
+    const parseResult = ParamsSchema.safeParse(params);
     if (!parseResult.success) {
       return Response.json({ success: false, error: 'Invalid route parameters' }, { status: 400 });
     }

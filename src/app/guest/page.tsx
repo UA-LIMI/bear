@@ -35,6 +35,16 @@ interface HotelEvent {
   type?: string;
 }
 
+interface UIComponentConfig {
+  name: string;
+  displayName: string;
+  type: string;
+  position: string;
+  priority: number;
+  visible: boolean;
+  configuration?: Record<string, unknown> | null;
+}
+
 export default function CompleteGuestInterface() {
   // Core state
   const [selectedGuest, setSelectedGuest] = useState<GuestProfile | null>(null);
@@ -54,12 +64,13 @@ export default function CompleteGuestInterface() {
   
   const [hotelEvents, setHotelEvents] = useState<HotelEvent[]>([]);
   const [uiTextContent, setUiTextContent] = useState<Record<string, string>>({});
+  const [uiComponents, setUiComponents] = useState<UIComponentConfig[]>([]);
   const [refreshingWeather, setRefreshingWeather] = useState(false);
   const [moduleStatus, setModuleStatus] = useState({
     weather: 'loading',
     events: 'loading',
     profiles: 'loading',
-    ui: 'loading'
+    ui: 'idle'
   });
   const [sessionSettings, setSessionSettings] = useState<SessionSettings>({
     qualityPreset: 'hd',
@@ -118,27 +129,30 @@ export default function CompleteGuestInterface() {
   }, []);
 
   const initializeAllModules = async () => {
-    console.log('🚀 Initializing all guest interface modules...');
     
     // Load modules in parallel for better performance
     const modulePromises = [
       loadGuestProfiles(),
       loadWeather(),
-      loadEvents(),
-      loadUIConfiguration()
+      loadEvents()
     ];
-    
+
     const results = await Promise.allSettled(modulePromises);
-    
+
     // Log module loading results
     results.forEach((result, index) => {
-      const modules = ['profiles', 'weather', 'events', 'ui'];
+      const modules = ['profiles', 'weather', 'events'];
       if (result.status === 'fulfilled') {
         console.log(`✅ Module ${modules[index]} loaded successfully`);
       } else {
         console.error(`❌ Module ${modules[index]} failed:`, result.reason);
       }
     });
+
+    setLoading(false);
+    if (selectedGuest) {
+      await loadUIConfiguration(selectedGuest.id, selectedGuest.guestType);
+    }
   };
 
   // Weather module with enhanced error handling
@@ -240,8 +254,6 @@ export default function CompleteGuestInterface() {
     } catch (error) {
       console.error('❌ Profiles module: Failed -', error);
       setModuleStatus(prev => ({ ...prev, profiles: 'error' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -276,36 +288,64 @@ export default function CompleteGuestInterface() {
   };
 
   // UI configuration module
-  const loadUIConfiguration = async (guestId?: string, guestType?: string) => {
+  const loadUIConfiguration = useCallback(async (guestId?: string, guestType?: string) => {
+    if (!guestId) {
+      console.warn('🎨 UI module: Skipping configuration load — missing guestId');
+      setUiComponents([]);
+      setUiTextContent({});
+      setModuleStatus(prev => ({ ...prev, ui: 'idle' }));
+      return;
+    }
+
     try {
       setModuleStatus(prev => ({ ...prev, ui: 'loading' }));
       console.log('🎨 UI module: Loading configuration...');
-      
+
       const response = await fetch('/api/get-ui-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: guestId,
-          guestType: guestType,
-          screenSize: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop'
-        })
+          guestType: guestType ?? 'standard',
+          screenSize:
+            window.innerWidth < 768
+              ? 'mobile'
+              : window.innerWidth < 1024
+              ? 'tablet'
+              : 'desktop',
+        }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
-        setUiTextContent(result.textContent);
+        setUiTextContent(result.textContent ?? {});
+        setUiComponents(result.components ?? []);
         setModuleStatus(prev => ({ ...prev, ui: 'success' }));
-        console.log(`✅ UI module: Loaded config for ${guestType} guest`);
+        console.log(`✅ UI module: Loaded config for ${guestType ?? 'standard'} guest`);
       } else {
         console.warn('⚠️ UI module: Database config failed, using defaults');
+        setUiComponents([]);
+        setUiTextContent({});
         setModuleStatus(prev => ({ ...prev, ui: 'fallback' }));
       }
     } catch (error) {
       console.error('❌ UI module: Failed -', error);
+      setUiComponents([]);
       setModuleStatus(prev => ({ ...prev, ui: 'error' }));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGuest) {
+      setUiComponents([]);
+      setUiTextContent({});
+      setModuleStatus(prev => ({ ...prev, ui: 'idle' }));
+      return;
+    }
+
+    void loadUIConfiguration(selectedGuest.id, selectedGuest.guestType);
+  }, [loadUIConfiguration, selectedGuest]);
 
   // Message handling for all modules
   const handleAddMessage = useCallback((content: string, role: 'user' | 'ai') => {
@@ -557,35 +597,62 @@ export default function CompleteGuestInterface() {
     selectedGuest && contextSections.length > 0 && !isVoiceProcessing && !loading
   );
 
+  const voiceModuleVisibility = useMemo(() => {
+    if (uiComponents.length === 0) {
+      return {
+        sessionPanel: true,
+        sessionConsole: true,
+      };
+    }
+
+    const isVisible = (componentName: string) =>
+      uiComponents.some(
+        (component) => component.name === componentName && component.visible !== false
+      );
+
+    return {
+      sessionPanel: isVisible('session_control_panel'),
+      sessionConsole: isVisible('voice_session_console'),
+    };
+  }, [uiComponents]);
+
   const voiceControls = useMemo(() => {
     if (!isVoicePanelReady || !selectedGuest) return null;
+
+    const { sessionPanel, sessionConsole } = voiceModuleVisibility;
+    if (!sessionPanel && !sessionConsole) return null;
+
     return (
       <div className="space-y-6">
-        <SessionControlPanel
-          guest={selectedGuest}
-          weather={weather}
-          settings={sessionSettings}
-          sections={contextSections}
-          selectedSections={selectedSections}
-          telemetry={telemetry}
-          isConnected={isVoiceConnected}
-          isProcessing={isVoiceProcessing}
-          onSettingsChange={handleSettingsChange}
-          onToggleSection={toggleSection}
-          onEnableAllSections={handleEnableAllSections}
-          onConnect={handleVoiceConnect}
-          onDisconnect={handleVoiceDisconnect}
-        />
-        <VoiceSessionConsole
-          ref={voiceConsoleRef}
-          guest={selectedGuest}
-          weather={weather}
-          settings={sessionSettings}
-          contexts={contextSections}
-          onAddMessage={handleAddMessage}
-          onSessionChange={handleSessionChange}
-          onConnectionStateChange={handleConnectionStateChange}
-        />
+        {sessionPanel && (
+          <SessionControlPanel
+            guest={selectedGuest}
+            weather={weather}
+            settings={sessionSettings}
+            sections={contextSections}
+            selectedSections={selectedSections}
+            telemetry={telemetry}
+            isConnected={isVoiceConnected}
+            isProcessing={isVoiceProcessing}
+            onSettingsChange={handleSettingsChange}
+            onToggleSection={toggleSection}
+            onEnableAllSections={handleEnableAllSections}
+            onConnect={handleVoiceConnect}
+            onDisconnect={handleVoiceDisconnect}
+          />
+        )}
+        {sessionConsole && (
+          <VoiceSessionConsole
+            ref={voiceConsoleRef}
+            guest={selectedGuest}
+            weather={weather}
+            settings={sessionSettings}
+            contexts={contextSections}
+            onAddMessage={handleAddMessage}
+            onSessionChange={handleSessionChange}
+            onConnectionStateChange={handleConnectionStateChange}
+          />
+        )}
       </div>
     );
   }, [
@@ -599,6 +666,7 @@ export default function CompleteGuestInterface() {
     handleVoiceDisconnect,
     isVoiceConnected,
     isVoiceProcessing,
+    voiceModuleVisibility,
     isVoicePanelReady,
     selectedGuest,
     selectedSections,

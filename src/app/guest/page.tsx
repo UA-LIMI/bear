@@ -352,26 +352,160 @@ export default function CompleteGuestInterface() {
     console.log(`💬 ${role.toUpperCase()}: ${content}`);
   }, []);
 
-  // Get guest-specific theme and layout configuration
-  const getGuestTheme = () => {
-    if (!selectedGuest) return { primary: '#54bb74', secondary: '#93cfa2', accent: 'green', icon: User };
-    
-    const { guestType, profile } = selectedGuest;
-    
+  const theme = useMemo(() => {
+    if (!selectedGuest) {
+      return { primary: '#54bb74', secondary: '#93cfa2', accent: 'green', icon: User };
+    }
+
+    const { guestType, profile, status } = selectedGuest;
+    const occupation = profile?.occupation ?? '';
+
     if (guestType === 'vip' || guestType === 'suite') {
       return { primary: '#9333ea', secondary: '#d946ef', accent: 'purple', icon: Crown };
     }
-    
-    if (profile.occupation.includes('Business') || guestType === 'platinum') {
+
+    if (occupation.includes('Business') || guestType === 'platinum') {
       return { primary: '#2563eb', secondary: '#3b82f6', accent: 'blue', icon: Briefcase };
     }
-    
-    if (profile.occupation.includes('Leisure') || selectedGuest.status === 'bookedOffsite') {
+
+    if (occupation.includes('Leisure') || status === 'bookedOffsite') {
       return { primary: '#059669', secondary: '#10b981', accent: 'green', icon: Palmtree };
     }
-    
+
     return { primary: '#54bb74', secondary: '#93cfa2', accent: 'green', icon: User };
-  };
+  }, [selectedGuest]);
+
+  const layout = useMemo(() => {
+    if (!selectedGuest) {
+      return {
+        leftSpan: 'lg:col-span-2',
+        centerSpan: 'lg:col-span-6',
+        rightSpan: 'lg:col-span-4',
+        showLeftPanel: false,
+        showRightPanel: true,
+        headerGradient: 'from-green-500/10 via-green-600/5 to-emerald-500/10',
+      };
+    }
+
+    const { guestType, profile, status } = selectedGuest;
+    const occupation = profile?.occupation ?? '';
+
+    if (guestType === 'vip' || guestType === 'suite') {
+      return {
+        leftSpan: 'lg:col-span-3',
+        centerSpan: 'lg:col-span-6',
+        rightSpan: 'lg:col-span-3',
+        showLeftPanel: true,
+        showRightPanel: true,
+        headerGradient: 'from-purple-500/10 via-purple-600/5 to-pink-500/10',
+      };
+    }
+
+    if (occupation.includes('Business') || guestType === 'platinum') {
+      return {
+        leftSpan: 'lg:col-span-3',
+        centerSpan: 'lg:col-span-9',
+        rightSpan: 'hidden',
+        showLeftPanel: true,
+        showRightPanel: false,
+        headerGradient: 'from-blue-500/10 via-blue-600/5 to-indigo-500/10',
+      };
+    }
+
+    return {
+      leftSpan: 'lg:col-span-2',
+      centerSpan: 'lg:col-span-6',
+      rightSpan: 'lg:col-span-4',
+      showLeftPanel: status === 'inRoom',
+      showRightPanel: true,
+      headerGradient: 'from-green-500/10 via-green-600/5 to-emerald-500/10',
+    };
+  }, [selectedGuest]);
+
+  const isVoicePanelReady = useMemo(
+    () => Boolean(selectedGuest && contextSections.length > 0 && !isVoiceProcessing && !loading),
+    [contextSections.length, isVoiceProcessing, loading, selectedGuest]
+  );
+
+  const voiceModuleVisibility = useMemo(() => {
+    if (uiComponents.length === 0) {
+      return {
+        sessionPanel: true,
+        sessionConsole: true,
+      };
+    }
+
+    const isVisible = (componentName: string) =>
+      uiComponents.some(
+        (component) => component.name === componentName && component.visible !== false
+      );
+
+    return {
+      sessionPanel: isVisible('session_control_panel'),
+      sessionConsole: isVisible('voice_session_console'),
+    };
+  }, [uiComponents]);
+
+  const voiceControls = useMemo(() => {
+    if (!isVoicePanelReady || !selectedGuest) return null;
+
+    const { sessionPanel, sessionConsole } = voiceModuleVisibility;
+    if (!sessionPanel && !sessionConsole) return null;
+
+    return (
+      <div className="space-y-6">
+        {sessionPanel && (
+          <SessionControlPanel
+            guest={selectedGuest}
+            weather={weather}
+            settings={sessionSettings}
+            sections={contextSections}
+            selectedSections={selectedSections}
+            telemetry={telemetry}
+            isConnected={isVoiceConnected}
+            isProcessing={isVoiceProcessing}
+            onSettingsChange={handleSettingsChange}
+            onToggleSection={toggleSection}
+            onEnableAllSections={handleEnableAllSections}
+            onConnect={handleVoiceConnect}
+            onDisconnect={handleVoiceDisconnect}
+          />
+        )}
+        {sessionConsole && (
+          <VoiceSessionConsole
+            ref={voiceConsoleRef}
+            guest={selectedGuest}
+            weather={weather}
+            settings={sessionSettings}
+            contexts={contextSections}
+            onAddMessage={handleAddMessage}
+            onSessionChange={handleSessionChange}
+            onConnectionStateChange={handleConnectionStateChange}
+          />
+        )}
+      </div>
+    );
+  }, [
+    contextSections,
+    handleAddMessage,
+    handleConnectionStateChange,
+    handleEnableAllSections,
+    handleSessionChange,
+    handleSettingsChange,
+    handleVoiceConnect,
+    handleVoiceDisconnect,
+    isVoiceConnected,
+    isVoicePanelReady,
+    isVoiceProcessing,
+    selectedGuest,
+    selectedSections,
+    sessionSettings,
+    telemetry,
+    toggleSection,
+    voiceConsoleRef,
+    voiceModuleVisibility,
+    weather,
+  ]);
 
   // Enhanced loading screen with module status
   if (loading) {
@@ -549,133 +683,7 @@ export default function CompleteGuestInterface() {
     return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">No guest selected</div>;
   }
 
-  const theme = getGuestTheme();
   const ThemeIcon = theme.icon;
-
-  // Get dynamic layout configuration based on guest type
-  const getLayoutConfig = () => {
-    const { guestType, profile } = selectedGuest;
-    
-    // VIP/Suite guests get full-width layouts with all panels
-    if (guestType === 'vip' || guestType === 'suite') {
-      return {
-        leftSpan: 'lg:col-span-3',
-        centerSpan: 'lg:col-span-6', 
-        rightSpan: 'lg:col-span-3',
-        showLeftPanel: true,
-        showRightPanel: true,
-        headerGradient: 'from-purple-500/10 via-purple-600/5 to-pink-500/10'
-      };
-    }
-    
-    // Business guests get efficiency-focused layouts
-    if (profile.occupation.includes('Business') || guestType === 'platinum') {
-      return {
-        leftSpan: 'lg:col-span-3',
-        centerSpan: 'lg:col-span-9',
-        rightSpan: 'hidden',
-        showLeftPanel: true,
-        showRightPanel: false, // Hide distractions
-        headerGradient: 'from-blue-500/10 via-blue-600/5 to-indigo-500/10'
-      };
-    }
-    
-    // Leisure guests get visual-rich layouts
-    return {
-      leftSpan: 'lg:col-span-2',
-      centerSpan: 'lg:col-span-6',
-      rightSpan: 'lg:col-span-4', // Larger for attractions/events
-      showLeftPanel: selectedGuest.status === 'inRoom',
-      showRightPanel: true,
-      headerGradient: 'from-green-500/10 via-green-600/5 to-emerald-500/10'
-    };
-  };
-
-  const layout = getLayoutConfig();
-
-  const isVoicePanelReady = Boolean(
-    selectedGuest && contextSections.length > 0 && !isVoiceProcessing && !loading
-  );
-
-  const voiceModuleVisibility = useMemo(() => {
-    if (uiComponents.length === 0) {
-      return {
-        sessionPanel: true,
-        sessionConsole: true,
-      };
-    }
-
-    const isVisible = (componentName: string) =>
-      uiComponents.some(
-        (component) => component.name === componentName && component.visible !== false
-      );
-
-    return {
-      sessionPanel: isVisible('session_control_panel'),
-      sessionConsole: isVisible('voice_session_console'),
-    };
-  }, [uiComponents]);
-
-  const voiceControls = useMemo(() => {
-    if (!isVoicePanelReady || !selectedGuest) return null;
-
-    const { sessionPanel, sessionConsole } = voiceModuleVisibility;
-    if (!sessionPanel && !sessionConsole) return null;
-
-    return (
-      <div className="space-y-6">
-        {sessionPanel && (
-          <SessionControlPanel
-            guest={selectedGuest}
-            weather={weather}
-            settings={sessionSettings}
-            sections={contextSections}
-            selectedSections={selectedSections}
-            telemetry={telemetry}
-            isConnected={isVoiceConnected}
-            isProcessing={isVoiceProcessing}
-            onSettingsChange={handleSettingsChange}
-            onToggleSection={toggleSection}
-            onEnableAllSections={handleEnableAllSections}
-            onConnect={handleVoiceConnect}
-            onDisconnect={handleVoiceDisconnect}
-          />
-        )}
-        {sessionConsole && (
-          <VoiceSessionConsole
-            ref={voiceConsoleRef}
-            guest={selectedGuest}
-            weather={weather}
-            settings={sessionSettings}
-            contexts={contextSections}
-            onAddMessage={handleAddMessage}
-            onSessionChange={handleSessionChange}
-            onConnectionStateChange={handleConnectionStateChange}
-          />
-        )}
-      </div>
-    );
-  }, [
-    contextSections,
-    handleAddMessage,
-    handleConnectionStateChange,
-    handleEnableAllSections,
-    handleSessionChange,
-    handleSettingsChange,
-    handleVoiceConnect,
-    handleVoiceDisconnect,
-    isVoiceConnected,
-    isVoiceProcessing,
-    voiceModuleVisibility,
-    isVoicePanelReady,
-    selectedGuest,
-    selectedSections,
-    sessionSettings,
-    telemetry,
-    toggleSection,
-    voiceConsoleRef,
-    weather,
-  ]);
 
   // Main guest interface - completely rebuilt with all working modules
   return (

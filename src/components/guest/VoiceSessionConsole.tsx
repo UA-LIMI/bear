@@ -97,9 +97,38 @@ ${contextSection}
 - ${languageDirective}
 
 # Tools
-- Use \`create_service_request\` to file a new guest request. Confirm details (guest name, room, priority) and produce a staff-ready summary of at least 12 characters.
-- Use \`get_service_requests\` to retrieve current or historic requests when the guest asks for updates or status checks.
-- Never invent data. Ask clarifying questions if required details (e.g., room, timeframe, contact info) are missing.
+You have access to three critical tools for managing guest service requests:
+
+## create_service_request
+- **When to use**: Anytime a guest requests something you cannot directly provide:
+  - Food orders (room service, dining reservations) - "I'd like a margherita pizza"
+  - Transportation (taxis, car service, airport transfers) - "I need a taxi to the airport"
+  - Housekeeping (cleaning, towels, amenities) - "Can I get extra towels?"
+  - Concierge services (tickets, reservations, information) - "Book me dinner at..."
+  - Room maintenance (temperature, repairs) - "The AC isn't working"
+  - Any other guest service needs
+- **Required**: Only 'summary' field (min 12 characters) - a clear, detailed staff-facing description
+- **Optional**: roomNumber (important!), requestType (e.g., 'dining', 'taxi', 'housekeeping'), priority (defaults to 'normal'), metadata (for extra details)
+- **Important**: Status automatically defaults to 'pending' - do NOT set it yourself
+- **After calling**: IMMEDIATELY confirm to guest: "I've submitted your request for [item]. The staff will handle it right away."
+
+## get_service_requests  
+- **When to use**: Guest asks about status of their requests ("Where's my food?", "What's happening with my taxi?", "Did you get my order?")
+- **Parameters**: Use roomNumber to find all requests for this guest's room
+- **Returns**: List of requests with ID, status (pending/in_progress/completed), priority, summary, timestamps
+- **After calling**: Tell guest the current status. If status is "in_progress", tell them staff is working on it. If "pending" and guest is asking, use update_service_request_priority tool next.
+
+## update_service_request_priority
+- **When to use**: Guest is asking about a request that's still pending ("Where is my pizza?", "What's taking so long?")
+- **Parameters**: requestId (from get_service_requests), priority (set to 'urgent')
+- **Purpose**: Alerts staff that guest is actively waiting and asking for updates
+- **Flow**: 1) get_service_requests to find the request, 2) if status is 'pending', update priority to 'urgent', 3) reassure guest
+
+**Critical Rules:**
+- Never invent request data. If you create a request, you MUST receive confirmation with an ID.
+- Always use roomNumber when creating requests so staff knows which room
+- If tool fails, tell guest there was an issue and you'll escalate to staff directly
+- When guest orders food, use requestType='dining' and include details in metadata if needed
 
 # Safety & Privacy
 - Do not disclose internal notes or other guests’ information.
@@ -266,6 +295,102 @@ export const VoiceSessionConsole = forwardRef<VoiceSessionConsoleHandle, VoiceSe
         });
 
         const realtimeSession = new RealtimeSession(agent);
+
+        // Set up MCP tool call handler
+        realtimeSession.on('conversation.item.created', async (event: any) => {
+          if (event?.item?.type === 'function_call') {
+            const functionCall = event.item;
+            const toolName = functionCall.name;
+            const callId = functionCall.call_id;
+            
+            console.log('🔧 Tool call detected:', {
+              name: toolName,
+              callId,
+              arguments: functionCall.arguments
+            });
+
+            try {
+              // Parse arguments
+              const args = typeof functionCall.arguments === 'string' 
+                ? JSON.parse(functionCall.arguments)
+                : functionCall.arguments;
+
+              // Find the MCP server for this tool
+              const mcpServer = hostedMcpServersMeta.find(() => true); // We only have one server
+              
+              if (!mcpServer) {
+                throw new Error('No MCP server configured');
+              }
+
+              console.log('🔧 Executing tool via MCP server:', mcpServer.serverUrl);
+
+              // Execute tool call via HTTP to MCP server
+              const toolResponse = await fetch(`${mcpServer.serverUrl}/tool/${toolName}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(mcpServer.authorization ? { 'Authorization': mcpServer.authorization } : {}),
+                },
+                body: JSON.stringify({ arguments: args }),
+              });
+
+              if (!toolResponse.ok) {
+                const errorText = await toolResponse.text();
+                console.error('🔧 Tool call failed:', errorText);
+                throw new Error(`Tool execution failed: ${errorText}`);
+              }
+
+              const toolResult = await toolResponse.json();
+              console.log('🔧 Tool result:', toolResult);
+
+              // Send result back to AI
+              realtimeSession.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify(toolResult.result || toolResult),
+                },
+              });
+
+              // Tell AI to respond
+              realtimeSession.sendEvent({
+                type: 'response.create',
+              });
+
+              onAddMessage?.(
+                `Tool executed: ${toolName} completed successfully`,
+                'ai'
+              );
+
+            } catch (error) {
+              console.error('🔧 Tool execution error:', error);
+              
+              // Send error back to AI
+              realtimeSession.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: JSON.stringify({
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    success: false,
+                  }),
+                },
+              });
+
+              // Tell AI to respond with error
+              realtimeSession.sendEvent({
+                type: 'response.create',
+              });
+
+              onAddMessage?.(
+                `Tool error: ${toolName} failed - ${error instanceof Error ? error.message : 'Unknown error'}`,
+                'ai'
+              );
+            }
+          }
+        });
 
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {

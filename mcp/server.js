@@ -36,33 +36,22 @@ app.get('/tools', requireAuth, (_req, res) => {
     {
       name: 'create_service_request',
       description:
-        'Create a new guest service request in Supabase. Use when the guest asks for assistance (e.g., taxis, amenities, reservations).',
+        'Create a new guest service request in the database. Use when guest requests: food/dining (room service, restaurant reservations), transportation (taxis, car service, airport transfers), housekeeping (cleaning, towels, amenities), concierge services (tickets, tours, information), or maintenance (AC, repairs). Returns confirmation with request ID.',
       input_schema: {
         type: 'object',
         properties: {
           guestId: { type: ['string', 'null'], description: 'Supabase profile UUID for the guest, if available.' },
-          roomNumber: { type: ['string', 'null'], description: 'Room number associated with the guest.' },
-          requestType: { type: ['string', 'null'], description: 'Category such as taxi, housekeeping, dining.' },
-          summary: { type: 'string', description: 'Clear staff-facing summary of the request.' },
+          roomNumber: { type: ['string', 'null'], description: 'Room number associated with the guest. Important for staff to know which room.' },
+          requestType: { type: ['string', 'null'], description: 'Category: "dining", "taxi", "housekeeping", "concierge", "maintenance", or other service type.' },
+          summary: { type: 'string', description: 'Clear, detailed summary for staff (minimum 12 characters). Include what guest wants, quantity/details, any time preferences.' },
           priority: {
             type: 'string',
             enum: ['low', 'normal', 'high', 'urgent'],
-            description: 'Optional priority. Defaults to normal.',
-          },
-          status: {
-            type: 'string',
-            enum: ['pending', 'in_progress', 'completed', 'cancelled'],
-            description: 'Initial status. Defaults to pending.',
-          },
-          eta: { type: ['string', 'null'], description: 'ISO timestamp for ETA if known.' },
-          createdBy: {
-            type: 'string',
-            enum: ['agent', 'staff'],
-            description: 'Who is creating the request. Defaults to agent.',
+            description: 'Priority level. Defaults to "normal". Use "urgent" only if guest explicitly expresses urgency or time constraint.',
           },
           metadata: {
             type: 'object',
-            description: 'Additional structured metadata (transport details, party size, etc.).',
+            description: 'Additional details as JSON: dietary restrictions, party size, destination address, special instructions, etc.',
           },
         },
         required: ['summary'],
@@ -72,28 +61,46 @@ app.get('/tools', requireAuth, (_req, res) => {
     {
       name: 'get_service_requests',
       description:
-        'Fetch recent service requests for a guest or room. Use when a guest asks for status updates or history.',
+        'Retrieve service requests for a guest or room. Use when guest asks: "Where is my food?", "What about my taxi?", "Did you get my request?", or any status inquiry. Returns list with status (pending/in_progress/completed), priority, timestamps, and any updates from staff.',
       input_schema: {
         type: 'object',
         properties: {
           guestId: { type: ['string', 'null'], description: 'Supabase profile UUID for the guest.' },
-          roomNumber: { type: ['string', 'null'], description: 'Guest room number.' },
+          roomNumber: { type: ['string', 'null'], description: 'Room number to find all requests for that room. Use this to check guest\'s requests.' },
           status: {
             type: 'string',
             enum: ['pending', 'in_progress', 'completed', 'cancelled'],
-            description: 'Optional filter by status.',
+            description: 'Filter by status. Leave empty to see all active requests (pending + in_progress).',
           },
           includeHistory: {
             type: 'boolean',
-            description: 'If true, include historical completed/cancelled items. Defaults to false.',
+            description: 'Set true to include completed/cancelled requests. Default false shows only active requests.',
           },
           limit: {
             type: 'integer',
             minimum: 1,
             maximum: 50,
-            description: 'Number of requests to return. Defaults to 10.',
+            description: 'Maximum number of requests to return. Default 10.',
           },
         },
+        additionalProperties: false,
+      },
+    },
+    {
+      name: 'update_service_request_priority',
+      description:
+        'Update the priority of an existing service request. Use when: guest asks "Where is my order?" or "What\'s taking so long?" for a request that\'s still pending - escalate to urgent to alert staff that guest is waiting and asking for updates.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          requestId: { type: 'string', description: 'The UUID of the service request to update (from get_service_requests).' },
+          priority: {
+            type: 'string',
+            enum: ['low', 'normal', 'high', 'urgent'],
+            description: 'New priority level. Use "urgent" when guest is actively asking about a pending request.',
+          },
+        },
+        required: ['requestId', 'priority'],
         additionalProperties: false,
       },
     },
@@ -194,6 +201,37 @@ app.post('/tool/get_service_requests', requireAuth, async (req, res) => {
     return res.json({ result });
   } catch (error) {
     console.error('[MCP] get_service_requests error', error);
+    const status = error.status ?? 500;
+    res.status(status).json({ error: error.message, details: error.details ?? null });
+  }
+});
+
+app.post('/tool/update_service_request_priority', requireAuth, async (req, res) => {
+  try {
+    const { arguments: args } = req.body ?? {};
+    if (!args || typeof args !== 'object') {
+      return res.status(400).json({ error: 'Missing tool arguments' });
+    }
+
+    const requestId = typeof args.requestId === 'string' ? args.requestId : null;
+    const priority = typeof args.priority === 'string' ? args.priority : null;
+
+    if (!requestId) {
+      return res.status(400).json({ error: 'requestId is required' });
+    }
+
+    if (!priority || !['low', 'normal', 'high', 'urgent'].includes(priority)) {
+      return res.status(400).json({ error: 'priority must be one of: low, normal, high, urgent' });
+    }
+
+    const result = await callApi(`/service-requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ priority }),
+    });
+
+    return res.json({ result });
+  } catch (error) {
+    console.error('[MCP] update_service_request_priority error', error);
     const status = error.status ?? 500;
     res.status(status).json({ error: error.message, details: error.details ?? null });
   }

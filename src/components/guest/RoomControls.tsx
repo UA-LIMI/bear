@@ -1,7 +1,34 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Lightbulb, Thermometer } from 'lucide-react';
+import {
+  AirVent,
+  BedDouble,
+  Briefcase,
+  Circle,
+  Clapperboard,
+  Crown,
+  Gem,
+  Heart,
+  Laptop,
+  Lightbulb,
+  MoonStar,
+  Music2,
+  Power,
+  Rainbow,
+  Shield,
+  Smartphone,
+  Sparkles,
+  Star,
+  Sunset,
+  Target,
+  Thermometer,
+  Video,
+  Waves,
+  Wine,
+  Wind,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface GuestProfile {
   id: string;
@@ -19,85 +46,105 @@ interface RoomControlsProps {
   onAddMessage: (content: string, role: 'user' | 'ai') => void;
 }
 
+type LightingEffect = {
+  name: string;
+  command: string;
+  description: string;
+  category: 'premium' | 'professional' | 'relaxing' | 'entertainment' | 'energetic' | 'romantic' | 'warm' | 'colorful' | 'basic';
+  icon: LucideIcon;
+};
+
+type EnvironmentControl = {
+  icon: LucideIcon;
+  label: string;
+  action: string;
+};
+
 export function RoomControls({ selectedGuest, onAddMessage }: RoomControlsProps) {
   if (selectedGuest.status !== 'inRoom') return null;
 
-  // Get guest-specific lighting effects based on type and preferences
-  const getGuestLightingEffects = () => {
+  const categoryStyles: Record<LightingEffect['category'], string> = {
+    premium: 'bg-gradient-to-br from-purple-500/20 to-amber-500/20 border border-purple-500/30',
+    professional: 'bg-gradient-to-br from-blue-500/20 to-slate-500/20 border border-blue-500/30',
+    relaxing: 'bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30',
+    entertainment: 'bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 border border-fuchsia-500/30',
+    energetic: 'bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30',
+    romantic: 'bg-gradient-to-br from-rose-500/20 to-pink-500/20 border border-rose-500/30',
+    warm: 'bg-gradient-to-br from-orange-500/20 to-amber-500/20 border border-orange-500/30',
+    colorful: 'bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30',
+    basic: 'bg-gradient-to-br from-slate-600/20 to-slate-700/20 border border-slate-600/30',
+  };
+
+  const getGuestLightingEffects = (): LightingEffect[] => {
     const { guestType, profile } = selectedGuest;
-    
-    // VIP/Suite guests get full premium lighting options
+
     if (guestType === 'vip' || guestType === 'suite') {
       return [
-        { name: 'Royal Ambiance', command: 'FX=88', description: 'Exclusive warm candle effect', category: 'premium', icon: '👑' },
-        { name: 'Diamond Sparkle', command: 'FX=80', description: 'Luxury twinkling stars', category: 'premium', icon: '💎' },
-        { name: 'Ocean Meditation', command: 'FX=101', description: 'Calming wave patterns', category: 'relaxing', icon: '🌊' },
-        { name: 'Pure Platinum', command: '#FFFFFF', description: 'Premium white light', category: 'professional', icon: '⚪' },
-        { name: 'Theater Mode', command: 'FX=13', description: 'Classic marquee chase', category: 'entertainment', icon: '🎭' },
-        { name: 'Lightning Show', command: 'FX=57', description: 'Dramatic energy bursts', category: 'energetic', icon: '⚡' }
+        { name: 'Royal Ambiance', command: 'FX=88', description: 'Exclusive warm candle effect', category: 'premium', icon: Crown },
+        { name: 'Diamond Sparkle', command: 'FX=80', description: 'Luxury twinkling stars', category: 'premium', icon: Gem },
+        { name: 'Ocean Meditation', command: 'FX=101', description: 'Calming wave patterns', category: 'relaxing', icon: Waves },
+        { name: 'Pure Platinum', command: '#FFFFFF', description: 'Premium white light', category: 'professional', icon: Circle },
+        { name: 'Theater Mode', command: 'FX=13', description: 'Classic marquee chase', category: 'entertainment', icon: Clapperboard },
+        { name: 'Lightning Show', command: 'FX=57', description: 'Dramatic energy bursts', category: 'energetic', icon: Sparkles },
       ];
     }
-    
-    // Business guests get efficiency-focused lighting
+
     if (profile.occupation.includes('Business') || guestType === 'platinum') {
       return [
-        { name: 'Work Mode', command: '#FFFFFF', description: 'Pure white for productivity', category: 'professional', icon: '💼' },
-        { name: 'Meeting Light', command: '#FFF8DC', description: 'Warm white for video calls', category: 'professional', icon: '📹' },
-        { name: 'Focus Blue', command: '#0000FF', description: 'Cool blue for concentration', category: 'professional', icon: '🔵' },
-        { name: 'Relaxation', command: 'FX=2', description: 'Breathing effect for breaks', category: 'relaxing', icon: '🫁' },
-        { name: 'Power Off', command: 'OFF', description: 'Turn off all lights', category: 'basic', icon: '⚫' }
+        { name: 'Work Mode', command: '#FFFFFF', description: 'Pure white for productivity', category: 'professional', icon: Briefcase },
+        { name: 'Meeting Light', command: '#FFF8DC', description: 'Warm white for video calls', category: 'professional', icon: Video },
+        { name: 'Focus Blue', command: '#0000FF', description: 'Cool blue for concentration', category: 'professional', icon: Target },
+        { name: 'Relaxation', command: 'FX=2', description: 'Breathing effect for breaks', category: 'relaxing', icon: Wind },
+        { name: 'Power Off', command: 'OFF', description: 'Turn off all lights', category: 'basic', icon: Power },
       ];
     }
-    
-    // Leisure guests get mood and ambiance options
+
     if (profile.occupation.includes('Leisure') || selectedGuest.status === 'bookedOffsite') {
       return [
-        { name: 'Romantic Dinner', command: 'FX=88', description: 'Perfect for intimate moments', category: 'romantic', icon: '🌹' },
-        { name: 'Sunset Vibes', command: '#FF4500', description: 'Warm orange ambiance', category: 'warm', icon: '🌅' },
-        { name: 'Ocean Dreams', command: 'FX=101', description: 'Relaxing blue waves', category: 'relaxing', icon: '🌊' },
-        { name: 'Party Mode', command: 'FX=89', description: 'Colorful fireworks effect', category: 'energetic', icon: '🎆' },
-        { name: 'Rainbow Magic', command: 'FX=9', description: 'Beautiful spectrum display', category: 'colorful', icon: '🌈' },
-        { name: 'Gentle Stars', command: 'FX=80', description: 'Soft romantic sparkles', category: 'romantic', icon: '✨' }
+        { name: 'Romantic Dinner', command: 'FX=88', description: 'Perfect for intimate moments', category: 'romantic', icon: Wine },
+        { name: 'Sunset Vibes', command: '#FF4500', description: 'Warm orange ambiance', category: 'warm', icon: Sunset },
+        { name: 'Ocean Dreams', command: 'FX=101', description: 'Relaxing blue waves', category: 'relaxing', icon: Waves },
+        { name: 'Party Mode', command: 'FX=89', description: 'Colorful fireworks effect', category: 'energetic', icon: Sparkles },
+        { name: 'Rainbow Magic', command: 'FX=9', description: 'Spectrum display', category: 'colorful', icon: Rainbow },
+        { name: 'Gentle Stars', command: 'FX=80', description: 'Soft atmospheric shimmer', category: 'romantic', icon: Star },
       ];
     }
-    
-    // Default guest lighting options
+
     return [
-      { name: 'Turn On', command: 'ON', description: 'Turn room lights on', category: 'basic', icon: '💡' },
-      { name: 'Turn Off', command: 'OFF', description: 'Turn room lights off', category: 'basic', icon: '⚫' },
-      { name: 'Romantic', command: 'FX=88', description: 'Warm candle effect', category: 'romantic', icon: '🕯️' },
-      { name: 'Work Light', command: '#FFFFFF', description: 'Pure white for reading', category: 'professional', icon: '⚪' },
-      { name: 'Relaxing', command: 'FX=2', description: 'Breathing effect', category: 'relaxing', icon: '🫁' }
+      { name: 'Turn On', command: 'ON', description: 'Illuminate the room', category: 'basic', icon: Lightbulb },
+      { name: 'Turn Off', command: 'OFF', description: 'Turn off all lighting', category: 'basic', icon: Power },
+      { name: 'Romantic', command: 'FX=88', description: 'Warm candlelight ambience', category: 'romantic', icon: Heart },
+      { name: 'Work Light', command: '#FFFFFF', description: 'Bright white for reading', category: 'professional', icon: Laptop },
+      { name: 'Relaxing', command: 'FX=2', description: 'Gentle breathing effect', category: 'relaxing', icon: Wind },
     ];
   };
 
   const lightingEffects = getGuestLightingEffects();
   const { guestType } = selectedGuest;
 
-  // Get guest-specific room environment controls
-  const getRoomEnvironmentControls = () => {
+  const getRoomEnvironmentControls = (): EnvironmentControl[] => {
     if (guestType === 'vip' || guestType === 'suite') {
       return [
-        { icon: '🌡️', label: 'Climate Control', action: 'I can adjust temperature, humidity, and air circulation to your preference' },
-        { icon: '🎵', label: 'Audio System', action: 'I can control room audio, music, and sound settings' },
-        { icon: '🔇', label: 'Privacy Mode', action: 'Activating VIP privacy mode with do not disturb' },
-        { icon: '🛏️', label: 'Sleep Settings', action: 'I can optimize room environment for rest' }
+        { icon: Thermometer, label: 'Climate Control', action: 'I can adjust temperature, humidity, and air circulation to your preference.' },
+        { icon: Music2, label: 'Audio System', action: 'I can control room audio, music, and sound settings.' },
+        { icon: Shield, label: 'Privacy Mode', action: 'Activating VIP privacy mode with do not disturb.' },
+        { icon: BedDouble, label: 'Sleep Settings', action: 'I can optimise the suite for rest.' },
       ];
     }
-    
+
     if (selectedGuest.profile.occupation.includes('Business')) {
       return [
-        { icon: '🌡️', label: 'Temperature', action: 'What temperature would you prefer for productivity?' },
-        { icon: '💨', label: 'Air Quality', action: 'I can optimize air circulation for focus' },
-        { icon: '🔇', label: 'Do Not Disturb', action: 'Setting work mode - no interruptions' },
-        { icon: '📱', label: 'Device Sync', action: 'I can help sync your devices with room systems' }
+        { icon: Thermometer, label: 'Temperature', action: 'What temperature would you prefer for productivity?' },
+        { icon: AirVent, label: 'Air Quality', action: 'I can optimise air circulation for focus.' },
+        { icon: Shield, label: 'Do Not Disturb', action: 'Setting work mode to minimise interruptions.' },
+        { icon: Smartphone, label: 'Device Sync', action: 'I can help sync your devices with room systems.' },
       ];
     }
-    
+
     return [
-      { icon: '🌡️', label: 'Adjust Temperature', action: 'What temperature would you prefer?' },
-      { icon: '💨', label: 'Air Circulation', action: 'I can adjust the air circulation for you' },
-      { icon: '🔇', label: 'Do Not Disturb', action: 'Setting do not disturb mode' }
+      { icon: Thermometer, label: 'Adjust Temperature', action: 'What temperature would you prefer?' },
+      { icon: AirVent, label: 'Air Circulation', action: 'I can adjust the air circulation for you.' },
+      { icon: MoonStar, label: 'Do Not Disturb', action: 'Setting do not disturb mode.' },
     ];
   };
 
@@ -120,76 +167,78 @@ export function RoomControls({ selectedGuest, onAddMessage }: RoomControlsProps)
         
         {/* Quick preset buttons - different for each guest type */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          {lightingEffects.slice(0, 2).map((effect) => (
-            <button
-              key={effect.command}
-              onClick={async () => {
-                onAddMessage(`Set ${effect.name.toLowerCase()}`, 'user');
-                try {
-                  await fetch('/api/control-lighting', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      room: selectedGuest.stayInfo?.room, 
-                      command: effect.command, 
-                      userId: selectedGuest.id 
-                    })
-                  });
-                  onAddMessage(`✅ ${effect.name} activated - ${effect.description}`, 'ai');
-                } catch (error) {
-                  onAddMessage('❌ Lighting control error', 'ai');
-                }
-              }}
-              className={`p-4 rounded-xl text-[#f3ebe2] transition-all hover:scale-105 ${
-                effect.category === 'premium' ? 'bg-gradient-to-br from-purple-500/20 to-gold-500/20 border border-purple-500/30' :
-                effect.category === 'professional' ? 'bg-gradient-to-br from-blue-500/20 to-gray-500/20 border border-blue-500/30' :
-                'bg-gradient-to-br from-pink-500/20 to-red-500/20 border border-pink-500/30'
-              }`}
-            >
-              <div className="text-2xl mb-2">{effect.icon}</div>
-              <div className="font-medium">{effect.name}</div>
-              <div className="text-xs opacity-70">{effect.description}</div>
-            </button>
-          ))}
+          {lightingEffects.slice(0, 2).map((effect) => {
+            const Icon = effect.icon;
+            return (
+              <button
+                key={effect.command}
+                onClick={async () => {
+                  onAddMessage(`Set ${effect.name.toLowerCase()}`, 'user');
+                  try {
+                    await fetch('/api/control-lighting', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        room: selectedGuest.stayInfo?.room,
+                        command: effect.command,
+                        userId: selectedGuest.id,
+                      }),
+                    });
+                    onAddMessage(`${effect.name} activated – ${effect.description}`, 'ai');
+                  } catch (error) {
+                    onAddMessage('Lighting control error. Please try again.', 'ai');
+                  }
+                }}
+                className={`p-4 rounded-xl text-[#f3ebe2] transition-all hover:scale-105 ${categoryStyles[effect.category]}`}
+              >
+                <Icon className="mb-3 h-6 w-6 text-white" />
+                <div className="font-medium">{effect.name}</div>
+                <div className="text-xs opacity-70">{effect.description}</div>
+              </button>
+            );
+          })}
         </div>
 
         {/* All lighting effects organized by category */}
         <div className="space-y-3">
-          {lightingEffects.slice(2).map((effect) => (
-            <button
-              key={effect.command}
-              onClick={async () => {
-                onAddMessage(`Set ${effect.name.toLowerCase()}`, 'user');
-                try {
-                  const response = await fetch('/api/control-lighting', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      room: selectedGuest.stayInfo?.room,
-                      command: effect.command,
-                      userId: selectedGuest.id
-                    })
-                  });
-                  const result = await response.json();
-                  onAddMessage(
-                    result.success ? 
-                      `✅ ${effect.name} activated - ${effect.description}` : 
-                      `❌ Failed: ${result.error}`, 
-                    'ai'
-                  );
-                } catch (error) {
-                  onAddMessage('❌ Lighting control error', 'ai');
-                }
-              }}
-              className="w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-all hover:scale-102 bg-white/5 hover:bg-white/10 border border-white/10"
-            >
-              <span className="text-xl">{effect.icon}</span>
-              <div className="flex-1">
-                <div className="text-[#f3ebe2] text-sm font-medium">{effect.name}</div>
-                <div className="text-[#f3ebe2]/60 text-xs">{effect.description}</div>
-              </div>
-            </button>
-          ))}
+          {lightingEffects.slice(2).map((effect) => {
+            const Icon = effect.icon;
+            return (
+              <button
+                key={effect.command}
+                onClick={async () => {
+                  onAddMessage(`Set ${effect.name.toLowerCase()}`, 'user');
+                  try {
+                    const response = await fetch('/api/control-lighting', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        room: selectedGuest.stayInfo?.room,
+                        command: effect.command,
+                        userId: selectedGuest.id,
+                      }),
+                    });
+                    const result = await response.json();
+                    onAddMessage(
+                      result.success
+                        ? `${effect.name} activated – ${effect.description}`
+                        : `Unable to activate ${effect.name}: ${result.error}`,
+                      'ai'
+                    );
+                  } catch (error) {
+                    onAddMessage('Lighting control error. Please try again.', 'ai');
+                  }
+                }}
+                className="w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-all hover:scale-102 bg-white/5 hover:bg-white/10 border border-white/10"
+              >
+                <Icon className="h-5 w-5 text-[#f3ebe2]" />
+                <div className="flex-1">
+                  <div className="text-[#f3ebe2] text-sm font-medium">{effect.name}</div>
+                  <div className="text-[#f3ebe2]/60 text-xs">{effect.description}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -218,19 +267,22 @@ export function RoomControls({ selectedGuest, onAddMessage }: RoomControlsProps)
         
         {/* Guest-specific environment actions */}
         <div className="space-y-2">
-          {environmentControls.map((control) => (
-            <button
-              key={control.label}
-              onClick={() => {
-                onAddMessage(control.label, 'user');
-                onAddMessage(control.action, 'ai');
-              }}
-              className="w-full flex items-center space-x-3 p-2 hover:bg-white/5 rounded-lg transition-all"
-            >
-              <span className="text-lg">{control.icon}</span>
-              <span className="text-[#f3ebe2] text-sm">{control.label}</span>
-            </button>
-          ))}
+          {environmentControls.map((control) => {
+            const Icon = control.icon;
+            return (
+              <button
+                key={control.label}
+                onClick={() => {
+                  onAddMessage(control.label, 'user');
+                  onAddMessage(control.action, 'ai');
+                }}
+                className="w-full flex items-center space-x-3 p-2 hover:bg-white/5 rounded-lg transition-all"
+              >
+                <Icon className="h-5 w-5 text-[#f3ebe2]" />
+                <span className="text-[#f3ebe2] text-sm">{control.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </motion.div>

@@ -2,9 +2,18 @@
 
 import { motion } from 'framer-motion';
 import { WeatherCard } from '../WeatherCard';
-import { 
-  User, Calendar, MapPin, Settings, Utensils, Phone, Car, Shield,
-  Star, Crown, Briefcase, Palmtree
+import {
+  Award,
+  Briefcase,
+  Calendar,
+  Car,
+  ConciergeBell,
+  Crown,
+  MapPin,
+  Shield,
+  Star,
+  User,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 interface GuestProfile {
@@ -57,75 +66,88 @@ export function GuestInfoPanel({
   const getGuestServices = () => {
     const { guestType, profile } = selectedGuest;
     
-    // VIP/Suite guests get premium services
     if (guestType === 'vip' || guestType === 'suite') {
       return [
-        { icon: Crown, label: 'Concierge Plus', action: 'Connect to your dedicated VIP concierge' },
-        { icon: Car, label: 'Luxury Transport', action: 'Arrange Rolls Royce or helicopter transfer' },
-        { icon: Utensils, label: 'Private Chef', action: 'Book private dining experience' },
-        { icon: Star, label: 'Exclusive Access', action: 'Access VIP facilities and experiences' }
+        { icon: ConciergeBell, label: 'Concierge Plus', action: 'Connecting you with your dedicated VIP concierge.' },
+        { icon: Car, label: 'Luxury Transport', action: 'Arranging Rolls Royce or helicopter transfer services.' },
+        { icon: UtensilsCrossed, label: 'Private Dining', action: 'Securing a private chef and curated menu.' },
+        { icon: Award, label: 'Exclusive Access', action: 'Coordinating access to private facilities and experiences.' },
       ];
     }
     
     // Business guests get efficiency services
     if (profile.occupation.includes('Business') || guestType === 'platinum') {
       return [
-        { icon: Briefcase, label: 'Business Center', action: 'Access meeting rooms and business services' },
-        { icon: Phone, label: 'Priority Concierge', action: 'Connect to business concierge' },
-        { icon: Car, label: 'Express Transport', action: 'Quick airport or meeting transfers' },
-        { icon: Settings, label: 'Tech Support', action: 'IT assistance and device setup' }
+        { icon: Briefcase, label: 'Business Center', action: 'Booking meeting rooms and business amenities.' },
+        { icon: ConciergeBell, label: 'Priority Concierge', action: 'Connecting you with a business concierge.' },
+        { icon: Car, label: 'Executive Transport', action: 'Arranging punctual airport or meeting transfers.' },
+        { icon: Shield, label: 'Technology Support', action: 'Coordinating IT assistance and device setup.' },
       ];
     }
     
     // Leisure guests get experience services
     if (profile.occupation.includes('Leisure') || selectedGuest.status === 'bookedOffsite') {
       return [
-        { icon: Palmtree, label: 'Experience Concierge', action: 'Plan Hong Kong adventures and attractions' },
-        { icon: Utensils, label: 'Dining Reservations', action: 'Book restaurants and culinary experiences' },
-        { icon: Car, label: 'Sightseeing Tours', action: 'Arrange guided tours and transportation' },
-        { icon: Star, label: 'Local Experiences', action: 'Discover hidden gems and local culture' }
+        { icon: Star, label: 'Experience Concierge', action: 'Planning curated Hong Kong experiences.' },
+        { icon: UtensilsCrossed, label: 'Dining Reservations', action: 'Reserving tables at signature restaurants.' },
+        { icon: Car, label: 'Sightseeing Tours', action: 'Arranging guided tours and transportation.' },
+        { icon: Award, label: 'Local Highlights', action: 'Showcasing exceptional cultural moments.' },
       ];
     }
-    
-    // Default services
+
     return [
-      { icon: Utensils, label: 'Room Service', action: 'Order room service' },
-      { icon: Phone, label: 'Concierge', action: 'Call concierge' },
-      { icon: Car, label: 'Transportation', action: 'Arrange transport' },
-      { icon: Shield, label: 'Do Not Disturb', action: 'Set do not disturb' }
+      { icon: UtensilsCrossed, label: 'Room Service', action: 'Coordinating in-room dining and amenities.' },
+      { icon: ConciergeBell, label: 'Concierge Desk', action: 'Connecting you with concierge assistance.' },
+      { icon: Car, label: 'Transportation', action: 'Arranging transfers or private cars.' },
+      { icon: Shield, label: 'Do Not Disturb', action: 'Updating room status to do not disturb.' },
     ];
   };
 
   // Get guest-specific events (filter based on interests)
   const getRelevantEvents = () => {
     const { guestType, profile } = selectedGuest;
-    
-    // Filter events based on guest preferences
-    return hotelEvents.filter(event => {
-      const eventLower = event.event.toLowerCase();
-      const descLower = (event.description || '').toLowerCase();
-      
-      if (guestType === 'vip' || guestType === 'suite') {
-        // VIP guests see exclusive events
-        return event.type === 'exclusive' || event.type === 'vip' || 
-               eventLower.includes('private') || eventLower.includes('exclusive');
-      }
-      
-      if (profile.occupation.includes('Business')) {
-        // Business guests see networking and professional events
-        return event.type === 'business' || event.type === 'networking' ||
-               eventLower.includes('meeting') || eventLower.includes('conference');
-      }
-      
-      if (profile.occupation.includes('Leisure')) {
-        // Leisure guests see entertainment and cultural events
-        return event.type === 'entertainment' || event.type === 'cultural' ||
-               eventLower.includes('tour') || eventLower.includes('show');
-      }
-      
-      // Default: show general events
-      return event.type !== 'exclusive' && event.type !== 'vip';
-    }).slice(0, 5);
+
+    return hotelEvents
+      .filter((event) => {
+        const eventLower = event.event.toLowerCase();
+        const descLower = (event.description || '').toLowerCase();
+
+        if (guestType === 'vip' || guestType === 'suite') {
+          return (
+            event.type === 'exclusive' ||
+            event.type === 'vip' ||
+            eventLower.includes('private') ||
+            eventLower.includes('exclusive') ||
+            descLower.includes('private') ||
+            descLower.includes('exclusive')
+          );
+        }
+
+        if (profile.occupation.includes('Business')) {
+          return (
+            event.type === 'business' ||
+            event.type === 'networking' ||
+            eventLower.includes('meeting') ||
+            eventLower.includes('conference') ||
+            descLower.includes('meeting') ||
+            descLower.includes('conference')
+          );
+        }
+
+        if (profile.occupation.includes('Leisure')) {
+          return (
+            event.type === 'entertainment' ||
+            event.type === 'cultural' ||
+            eventLower.includes('tour') ||
+            eventLower.includes('show') ||
+            descLower.includes('tour') ||
+            descLower.includes('show')
+          );
+        }
+
+        return event.type !== 'exclusive' && event.type !== 'vip';
+      })
+      .slice(0, 5);
   };
 
   const services = getGuestServices();
@@ -173,8 +195,9 @@ export function GuestInfoPanel({
           
           {/* Guest type specific info */}
           {(selectedGuest.guestType === 'vip' || selectedGuest.guestType === 'suite') && (
-            <div className="mt-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded">
-              <span className="text-purple-300 text-xs">✨ Premium services and exclusive access available</span>
+            <div className="mt-3 flex items-center gap-2 rounded border border-purple-500/20 bg-purple-500/10 p-2 text-purple-200">
+              <Crown className="h-4 w-4" />
+              <span className="text-xs uppercase tracking-wide">Premium privileges enabled</span>
             </div>
           )}
         </div>
@@ -228,7 +251,7 @@ export function GuestInfoPanel({
         className="bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm p-4"
       >
         <h4 className="text-[#f3ebe2] font-medium mb-3 flex items-center">
-          <Settings className="w-4 h-4 mr-2 text-gray-400" />
+          <ConciergeBell className="w-4 h-4 mr-2 text-gray-400" />
           {selectedGuest.guestType === 'vip' || selectedGuest.guestType === 'suite' ? 'Premium Services' :
            selectedGuest.profile.occupation.includes('Business') ? 'Business Services' :
            'Quick Services'}
@@ -239,7 +262,7 @@ export function GuestInfoPanel({
               key={service.label}
               onClick={() => {
                 onAddMessage(service.action, 'user');
-                onAddMessage(`I'll assist with ${service.label.toLowerCase()}, ${selectedGuest.name}.`, 'ai');
+                onAddMessage(`I\'ll organise ${service.label.toLowerCase()} for you right away, ${selectedGuest.name}.`, 'ai');
               }}
               className="w-full flex items-center space-x-3 p-2 hover:bg-white/5 rounded-lg transition-all"
             >
@@ -277,7 +300,7 @@ export function GuestInfoPanel({
                                     selectedGuest.profile.occupation.includes('Business') ? 'business facilities and meeting venues' :
                                     'attractions and local experiences';
             onAddMessage('Tell me about nearby attractions', 'user');
-            onAddMessage(`Based on your location and ${selectedGuest.membershipTier} status, I can recommend ${recommendationType}. Would you like specific suggestions?`, 'ai');
+            onAddMessage(`Based on your location and ${selectedGuest.membershipTier} status, I can refine recommendations for ${recommendationType}. Would tailored suggestions be helpful?`, 'ai');
           }}
           className="w-full mt-3 p-2 bg-[#54bb74]/20 hover:bg-[#54bb74]/30 text-[#54bb74] text-sm rounded-lg transition-all"
         >
